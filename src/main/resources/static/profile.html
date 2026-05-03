@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Voice Assistant</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>👤</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .logo { display: flex; align-items: center; gap: 10px; color: white; font-size: 24px; font-weight: bold; text-decoration: none; }
+        .nav-btn { padding: 10px 20px; border: 2px solid white; border-radius: 25px; background: transparent; color: white; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .nav-btn:hover { background: white; color: #667eea; }
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        .page-title { color: white; font-size: 32px; margin-bottom: 30px; text-align: center; }
+        .profile-card { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; }
+        .profile-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; color: white; }
+        .avatar-large { width: 100px; height: 100px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 48px; color: #667eea; font-weight: bold; margin: 0 auto 15px; }
+        .profile-name { font-size: 28px; margin-bottom: 5px; }
+        .profile-email { opacity: 0.8; }
+        .profile-body { padding: 40px; }
+        .tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 30px; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-size: 16px; font-weight: 600; color: #666; cursor: pointer; position: relative; }
+        .tab-btn.active { color: #667eea; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #667eea; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
+        .form-group input { width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .form-group input:disabled { background: #f5f5f5; }
+        .form-row { display: flex; gap: 20px; }
+        .form-row .form-group { flex: 1; }
+        .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .message { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; display: none; }
+        .message.success { background: #d4edda; color: #155724; }
+        .message.error { background: #f8d7da; color: #721c24; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat-card { background: #f8f9fa; border-radius: 15px; padding: 25px; text-align: center; }
+        .stat-card .icon { font-size: 40px; margin-bottom: 10px; }
+        .stat-card .number { font-size: 32px; font-weight: bold; color: #667eea; }
+        .stat-card .label { color: #666; font-size: 14px; margin-top: 5px; }
+        .danger-zone { margin-top: 40px; padding-top: 30px; border-top: 2px solid #f8d7da; }
+        .danger-zone h4 { color: #dc3545; margin-bottom: 15px; }
+        .danger-btn { padding: 12px 24px; background: #dc3545; color: white; border: none; border-radius: 10px; cursor: pointer; }
+        .skill-profile-section { background: #f8f9fa; border-radius: 15px; padding: 25px; margin-top: 20px; }
+        .skill-profile-section h3 { color: #667eea; margin-bottom: 20px; }
+        .progress-bar-small { height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .progress { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; }
+        .level-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        .level-beginner { background: #f8d7da; color: #721c24; }
+        .level-intermediate { background: #fff3cd; color: #856404; }
+        .level-advanced { background: #d1ecf1; color: #0c5460; }
+        .level-expert { background: #d4edda; color: #155724; }
+        .skill-stat { margin-bottom: 15px; }
+        .skill-stat-label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; }
+        .skill-stat-value { display: block; font-size: 24px; font-weight: bold; color: #667eea; }
+        .topic-item { padding: 12px; background: white; border-radius: 10px; margin-bottom: 10px; }
+        .topic-name { font-weight: bold; color: #333; margin-bottom: 8px; }
+        .topic-score { font-size: 12px; color: #666; white-space: nowrap; }
+        @media (max-width: 768px) { .form-row { flex-direction: column; } .stats-grid { grid-template-columns: 1fr; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        table tr:hover { background: #f8f9fa; }
+        table td { padding: 15px; border-bottom: 1px solid #e0e0e0; }
+        .accuracy-high { color: #28a745; font-weight: 600; }
+        .accuracy-medium { color: #ffc107; font-weight: 600; }
+        .accuracy-low { color: #dc3545; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="page-title">Profile</h1>
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="avatar-large" id="avatar-display">U</div>
+                <h2 class="profile-name" id="name-display">User</h2>
+                <p class="profile-email" id="email-display">email@example.com</p>
+            </div>
+            <div class="profile-body">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="profileSwitchTab('profile')">Profile</button>
+                    <button class="tab-btn" onclick="profileSwitchTab('stats')">Statistics</button>
+                    <button class="tab-btn" onclick="profileSwitchTab('weak-questions')">📚 Weak Questions</button>
+                    <button class="tab-btn" onclick="profileSwitchTab('settings')">Settings</button>
+                </div>
+                <div id="profile-tab" class="tab-content active">
+                    <div id="profile-message" class="message"></div>
+                    <form id="profile-form" onsubmit="saveProfile(event)">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="edit-name" required></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="edit-email" disabled></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Phone</label><input type="tel" id="edit-phone"></div>
+                            <div class="form-group"><label>Company</label><input type="text" id="edit-company"></div>
+                        </div>
+                        <div class="form-group"><label>Position</label><input type="text" id="edit-position"></div>
+                        <button type="submit" class="submit-btn">Save Changes</button>
+                    </form>
+                </div>
+                <div id="stats-tab" class="tab-content">
+                    <div id="stats-message" class="message"></div>
+
+
+                    <div id="skillProfileContainer" style="display: none;">
+                        <div class="skill-profile-section">
+                            <h3>📊 Your Progress and Skills</h3>
+                            <div class="row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                                <div class="skill-stat">
+                                    <span class="skill-stat-label">Overall Score:</span>
+                                    <span class="skill-stat-value" id="overallScore">0%</span>
+                                    <div class="progress-bar-small" style="margin-top: 8px;">
+                                        <div class="progress" id="overallScoreBar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-stat">
+                                    <span class="skill-stat-label">Level:</span>
+                                    <span class="level-badge" id="levelBadge">BEGINNER</span>
+                                </div>
+                                <div class="skill-stat">
+                                    <span class="skill-stat-label">Tasks Completed:</span>
+                                    <span class="skill-stat-value" id="tasksCompleted">0</span>
+                                </div>
+                                <div class="skill-stat">
+                                    <span class="skill-stat-label">Attempts:</span>
+                                    <span class="skill-stat-value" id="tasksAttempted">0</span>
+                                </div>
+                            </div>
+
+                            <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                                <div>
+                                    <h5 style="color: #667eea; margin-bottom: 10px;">💪 Strongest Topic</h5>
+                                    <p id="strongestTopic" style="color: #28a745; font-weight: bold; font-size: 16px;">-</p>
+                                </div>
+                                <div>
+                                    <h5 style="color: #667eea; margin-bottom: 10px;">📚 Recommended Topic</h5>
+                                    <p id="recommendedTopic" style="color: #ffc107; font-weight: bold; font-size: 16px;">-</p>
+                                </div>
+                            </div>
+
+                            <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
+
+                            <div>
+                                <h5 style="color: #667eea; margin-bottom: 15px;">📈 Topic Progress</h5>
+                                <div id="topicProgressList"></div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div id="noSkillsContainer" style="display: none; text-align: center; padding: 40px; color: #999;">
+                        <p style="font-size: 48px; margin-bottom: 15px;">📊</p>
+                        <p style="font-size: 18px; margin-bottom: 10px;">Statistics Not Loaded</p>
+                        <p style="font-size: 14px;">Complete a few Live Coding tasks to see your progress.</p>
+                        <a href="/live-coding" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 10px;">👉 Go to Live Coding</a>
+                    </div>
+                </div>
+                    <div id="weak-questions-tab" class="tab-content">
+                        <div id="weak-questions-message" class="message"></div>
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #667eea; margin-bottom: 10px;">📚 Your Weak Questions</h3>
+                            <p style="color: #666; font-size: 14px;">Questions with accuracy less than 70% from your interviews. Work on them to improve results.</p>
+                        </div>
+
+
+                    <div id="weak-questions-loading" style="text-align: center; padding: 40px;">
+                        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #e0e0e0; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 15px; color: #666;">Loading questions...</p>
+                    </div>
+
+
+                    <div id="weak-questions-empty" style="text-align: center; padding: 40px; display: none;">
+                        <p style="font-size: 48px; margin-bottom: 15px;">✨</p>
+                        <p style="font-size: 18px; color: #667eea; font-weight: bold; margin-bottom: 10px;">No Weak Questions!</p>
+                        <p style="font-size: 14px; color: #666;">You answered everything with 70% or higher accuracy. Excellent!</p>
+                    </div>
+
+
+                    <div id="weak-questions-container" style="display: none;">
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                                <thead style="background: #f8f9fa;">
+                                                    <tr>
+                                                        <th style="padding: 15px; text-align: left; color: #666; font-weight: 600; border-bottom: 2px solid #e0e0e0;">#</th>
+                                                        <th style="padding: 15px; text-align: left; color: #666; font-weight: 600; border-bottom: 2px solid #e0e0e0;">Question</th>
+                                                        <th style="padding: 15px; text-align: center; color: #666; font-weight: 600; border-bottom: 2px solid #e0e0e0;">Topic</th>
+                                                        <th style="padding: 15px; text-align: center; color: #666; font-weight: 600; border-bottom: 2px solid #e0e0e0;">Accuracy</th>
+                                                        <th style="padding: 15px; text-align: center; color: #666; font-weight: 600; border-bottom: 2px solid #e0e0e0;">Attempts</th>
+                                                    </tr>
+                                                </thead>
+                                <tbody id="weak-questions-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="settings-tab" class="tab-content">
+                    <div id="settings-message" class="message"></div>
+                    <h4 style="margin-bottom:20px">Change Password</h4>
+                    <form onsubmit="changePassword(event)">
+                        <div class="form-group"><label>Current Password</label><input type="password" id="current-password"></div>
+                        <div class="form-group"><label>New Password</label><input type="password" id="new-password" minlength="6"></div>
+                        <div class="form-group"><label>Confirm Password</label><input type="password" id="confirm-password"></div>
+                        <button type="submit" class="submit-btn">Change Password</button>
+                    </form>
+                    <div class="danger-zone">
+                        <h4>⚠️ Danger Zone</h4>
+                        <p style="margin-bottom:15px;color:#666">Deleting account is irreversible.</p>
+                        <button class="danger-btn" onclick="deleteAccount()">Delete Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function profileSwitchTab(t) {
+            const card = document.querySelector('.profile-card') || document;
+            card.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const clicked = card.querySelector(`.tab-btn[onclick*="${t}"]`);
+            if (clicked) clicked.classList.add('active');
+            card.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const tabElement = document.getElementById(`${t}-tab`);
+            if (tabElement) tabElement.classList.add('active');
+
+            if (t === 'stats') {
+                const container = document.getElementById('skillProfileContainer');
+
+                if (container && container.style.display !== 'block' && !skillProfileLoading) {
+                    loadSkillProfile();
+                }
+            }
+        }
+
+        function showMsg(id, msg, ok) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = msg;
+            el.className = `message ${ok ? 'success' : 'error'}`;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        let currentUser = null;
+        let profilePageInitialized = false;
+        let skillProfileLoading = false;
+
+        function initProfilePage() {
+            const path = (window.location.pathname || '').replace(/\/$/, '') || '/';
+            if (path !== '/profile' && path !== '/profile.html') return;
+
+            const avatarEl = document.getElementById('avatar-display');
+            const nameEl = document.getElementById('name-display');
+            const emailEl = document.getElementById('email-display');
+            const editNameEl = document.getElementById('edit-name');
+            const editEmailEl = document.getElementById('edit-email');
+            const editPhoneEl = document.getElementById('edit-phone');
+            const editCompanyEl = document.getElementById('edit-company');
+            const editPositionEl = document.getElementById('edit-position');
+
+            if (!avatarEl || !nameEl || !emailEl || !editNameEl || !editEmailEl) {
+                if (!profilePageInitialized) {
+                    setTimeout(initProfilePage, 100);
+                }
+                return;
+            }
+
+            const userJson = localStorage.getItem('currentUser');
+            if (!userJson) {
+                if (window.navigateTo) window.navigateTo('/login');
+                else window.location.href = '/login';
+                return;
+            }
+
+            try {
+                currentUser = JSON.parse(userJson);
+            } catch (e) {
+                localStorage.removeItem('currentUser');
+                if (window.navigateTo) window.navigateTo('/login');
+                else window.location.href = '/login';
+                return;
+            }
+
+            avatarEl.textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
+            nameEl.textContent = currentUser.name || 'User';
+            emailEl.textContent = currentUser.email || '';
+            editNameEl.value = currentUser.name || '';
+            editEmailEl.value = currentUser.email || '';
+            if (editPhoneEl) editPhoneEl.value = currentUser.phone || '';
+            if (editCompanyEl) editCompanyEl.value = currentUser.company || '';
+            if (editPositionEl) editPositionEl.value = currentUser.position || '';
+
+            if (!profilePageInitialized) {
+                profilePageInitialized = true;
+                refreshUserFromServer();
+                loadSkillProfile();
+            }
+
+            const weakQuestionsBtn = document.querySelector('.tab-btn[onclick*="weak-questions"]');
+            if (weakQuestionsBtn && !weakQuestionsBtn.dataset.bound) {
+                weakQuestionsBtn.dataset.bound = '1';
+                weakQuestionsBtn.addEventListener('click', () => {
+                    setTimeout(() => loadWeakQuestions(), 100);
+                });
+            }
+        }
+
+        async function refreshUserFromServer() {
+            if (!currentUser || !currentUser.id) return;
+            try {
+                const r = await window.authFetch(`/api/auth/user/${currentUser.id}`);
+                if (!r.ok) return;
+                const serverUser = await r.json();
+                if (serverUser && serverUser.id) {
+             currentUser = { ...currentUser, ...serverUser };
+                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                     const avatarEl = document.getElementById('avatar-display');
+                     const nameEl = document.getElementById('name-display');
+                     const emailEl = document.getElementById('email-display');
+                     if (avatarEl) avatarEl.textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
+                     if (nameEl) nameEl.textContent = currentUser.name || 'User';
+                    if (emailEl) emailEl.textContent = currentUser.email || '';
+
+                    const editNameEl = document.getElementById('edit-name');
+                    const editPhoneEl = document.getElementById('edit-phone');
+                    const editCompanyEl = document.getElementById('edit-company');
+                    const editPositionEl = document.getElementById('edit-position');
+                    if (editNameEl) editNameEl.value = currentUser.name || '';
+                    if (editPhoneEl) editPhoneEl.value = currentUser.phone || '';
+                    if (editCompanyEl) editCompanyEl.value = currentUser.company || '';
+                    if (editPositionEl) editPositionEl.value = currentUser.position || '';
+                }
+            } catch (e) {
+                console.warn('Failed to refresh user:', e);
+            }
+        }
+
+        async function loadSkillProfile() {
+            if (skillProfileLoading) return;
+            if (!window.authFetch) {
+                setTimeout(loadSkillProfile, 200);
+                return;
+            }
+            skillProfileLoading = true;
+
+            const noSkills = document.getElementById('noSkillsContainer');
+            if (noSkills) {
+                noSkills.style.display = 'block';
+                 noSkills.innerHTML = '<p style="font-size:32px">⏳</p><p>Loading statistics...</p>';
+            }
+
+            try {
+                const response = await window.authFetch(`/api/coding/profile/${currentUser.id}`);
+                if (!response.ok) {
+                    console.warn('Failed to load skill profile:', response.status);
+                    document.getElementById('skillProfileContainer').style.display = 'none';
+                    document.getElementById('noSkillsContainer').style.display = 'block';
+                    return;
+                }
+                const profile = await response.json();
+                profileDisplaySkillProfile(profile);
+            } catch (error) {
+                console.error('Error loading skill profile:', error);
+                document.getElementById('skillProfileContainer').style.display = 'none';
+                document.getElementById('noSkillsContainer').style.display = 'block';
+            } finally {
+                skillProfileLoading = false;
+            }
+        }
+
+        function profileDisplaySkillProfile(profile) {
+            document.getElementById('skillProfileContainer').style.display = 'block';
+            document.getElementById('noSkillsContainer').style.display = 'none';
+
+            const overallScore = Math.round(profile.overallScore || 0);
+            document.getElementById('overallScore').textContent = overallScore + '%';
+            document.getElementById('overallScoreBar').style.width = overallScore + '%';
+            document.getElementById('tasksCompleted').textContent = profile.totalTasksCompleted || 0;
+            document.getElementById('tasksAttempted').textContent = profile.totalTasksAttempted || 0;
+
+            const levelBadge = document.getElementById('levelBadge');
+            levelBadge.textContent = profile.currentLevel || 'BEGINNER';
+            levelBadge.className = 'level-badge level-' + (profile.currentLevel || 'beginner').toLowerCase();
+
+                 document.getElementById('strongestTopic').textContent = profile.strongestTopic || 'Practice needed';
+                 document.getElementById('recommendedTopic').textContent = profile.recommendedTopic || 'Any topic';
+
+            if (profile.topicProgress && profile.topicProgress.length > 0) {
+                document.getElementById('topicProgressList').innerHTML = profile.topicProgress.map(topic => `
+                <div class="topic-item">
+                    <div class="topic-name">${topic.topicName}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="progress-bar-small" style="flex: 1; margin-right: 10px;">
+                            <div class="progress" style="width: ${topic.averageScore}%"></div>
+                        </div>
+                         <span class="topic-score">${Math.round(topic.averageScore)}% (${topic.tasksCompleted} tasks)</span>
+                    </div>
+                </div>
+            `).join('');
+             } else {
+                 document.getElementById('topicProgressList').innerHTML =
+                     '<p style="color: #999; text-align: center;">No completed tasks yet</p>';
+            }
+        }
+
+        async function loadWeakQuestions() {
+            const loading = document.getElementById('weak-questions-loading');
+            const empty = document.getElementById('weak-questions-empty');
+            const container = document.getElementById('weak-questions-container');
+            const tbody = document.getElementById('weak-questions-tbody');
+
+            try {
+                loading.style.display = 'block';
+                empty.style.display = 'none';
+                container.style.display = 'none';
+
+                const response = await window.authFetch('/api/feedback/weak-questions', {
+                    method: 'GET',
+                    cache: 'no-store'
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    loading.style.display = 'none';
+                    empty.style.display = 'block';
+                    empty.innerHTML = '<p style="color: #999; text-align: center;">Authorization required.<br><a href="/login" style="color: #667eea;">Login</a></p>';
+                    return;
+                }
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                const weakQuestions = Array.isArray(data.questions) ? data.questions : [];
+
+                if (weakQuestions.length === 0) {
+                    loading.style.display = 'none';
+                    empty.style.display = 'block';
+                    container.style.display = 'none';
+                    return;
+                }
+
+                tbody.innerHTML = weakQuestions.map((q, i) => {
+                    const acc = q.accuracy || 0;
+                    const cls = acc >= 60 ? 'accuracy-medium' : 'accuracy-low';
+                    return `<tr>
+                    <td>${i + 1}</td>
+                    <td style="color:#333;max-width:300px;word-wrap:break-word;">${q.question}</td>
+                    <td style="text-align:center;color:#667eea;font-weight:500;">${q.topic}</td>
+                    <td style="text-align:center;"><span class="${cls}">${acc}%</span></td>
+                    <td style="text-align:center;color:#666;">${q.attemptCount || 1}</td>
+                </tr>`;
+                }).join('');
+
+                loading.style.display = 'none';
+                container.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading weak questions:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+                 empty.innerHTML = '<p style="color:#999;text-align:center;">Loading error</p>';
+            }
+        }
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            try {
+                const response = await window.authFetch(`/api/auth/user/${currentUser.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('edit-name').value,
+                        phone: document.getElementById('edit-phone').value,
+                        company: document.getElementById('edit-company').value,
+                        position: document.getElementById('edit-position').value
+                    })
+                });
+                const data = await response.json();
+             if (data.success) {
+                     currentUser = { ...currentUser, ...data.user };
+                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                     document.getElementById('avatar-display').textContent = currentUser.name[0].toUpperCase();
+                     document.getElementById('name-display').textContent = currentUser.name;
+                     showMsg('profile-message', 'Profile updated!', true);
+                } else {
+                     showMsg('profile-message', data.message || 'Error', false);
+                 }
+             } catch (error) {
+                 showMsg('profile-message', 'Connection error', false);
+            }
+        }
+
+        async function changePassword(e) {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+             if (!currentPassword) {
+                 showMsg('settings-message', 'Enter current password', false);
+                 return;
+             }
+             if (!newPassword) {
+                 showMsg('settings-message', 'Enter new password', false);
+                 return;
+             }
+             if (newPassword.length < 6) {
+                 showMsg('settings-message', 'New password minimum 6 characters', false);
+                 return;
+             }
+             if (newPassword !== confirmPassword) {
+                 showMsg('settings-message', 'Passwords do not match', false);
+                 return;
+             }
+             if (currentPassword === newPassword) {
+                 showMsg('settings-message', 'New password must differ from current', false);
+                 return;
+            }
+
+            try {
+                const response = await window.authFetch(`/api/auth/user/${currentUser.id}/password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                const data = await response.json();
+
+                 if (data.success) {
+                     showMsg('settings-message', '✅ Password changed successfully!', true);
+
+                     document.getElementById('current-password').value = '';
+                     document.getElementById('new-password').value = '';
+                     document.getElementById('confirm-password').value = '';
+                 } else {
+                     showMsg('settings-message', data.message || 'Password change error', false);
+                 }
+             } catch (error) {
+                 console.error('Error changing password:', error);
+                 showMsg('settings-message', 'Server connection error', false);
+            }
+        }
+
+         async function deleteAccount() {
+             if (!confirm('Delete account? This action cannot be undone.')) return;
+
+             const btn = document.querySelector('.danger-btn');
+             if (btn) { btn.disabled = true; btn.textContent = 'Deleting...'; }
+
+            try {
+                const response = await window.authFetch(`/api/auth/user/${currentUser.id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                     localStorage.removeItem('currentUser');
+                     localStorage.removeItem('authToken');
+                     if (window.updateGlobalHeader) window.updateGlobalHeader();
+                    e
+                     sessionStorage.setItem('accountDeleted', 'true');
+
+                    if (window.navigateTo) window.navigateTo('/login');
+                    else window.location.href = '/login';
+                 } else {
+                     const data = await response.json().catch(() => ({}));
+                     showMsg('settings-message', data.message || 'Account deletion error', false);
+                     if (btn) { btn.disabled = false; btn.textContent = 'Delete Account'; }
+                 }
+             } catch (e) {
+                 showMsg('settings-message', 'Connection error', false);
+                 if (btn) { btn.disabled = false; btn.textContent = 'Delete Account'; }
+            }
+        }
+
+        document.addEventListener('spa:route', (e) => {
+            if (e && e.detail && e.detail.path === '/profile') {
+                profilePageInitialized = false;
+                skillProfileLoading = false;
+                initProfilePage();
+            }
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initProfilePage, { once: true });
+        } else {
+            initProfilePage();
+        }
+    </script>
+</body>
+</html>

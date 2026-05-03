@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Coding - AI Interview Assistant</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>💻</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        main[data-content] {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: calc(100vh - 70px);
+            width: 100%;
+            padding: 20px;
+        }
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        h1 .icon { font-size: 32px; }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 15px;
+            height: 100%;
+        }
+        .card-body { padding: 20px; }
+        .card h4 {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.4);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: bold;
+            color: #333;
+            transition: all 0.3s;
+        }
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 193, 7, 0.4);
+            color: #333;
+        }
+        .form-select, .form-control {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+            padding: 12px 15px;
+        }
+        .form-select:focus, .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        .timer-badge {
+            font-size: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .timer-badge.countdown-mode {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        #editor {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            font-size: 14px;
+        }
+        .output-area {
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 120px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+        .task-description {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .task-description h4 { color: #333; margin-bottom: 10px; }
+        .task-description h5 { color: #667eea; margin: 15px 0 10px; }
+        .task-description ul { padding-left: 20px; }
+        .task-description li { margin-bottom: 8px; }
+        .task-description code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #e83e8c;
+        }
+        .difficulty-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .difficulty-easy { background: #d4edda; color: #155724; }
+        .difficulty-medium { background: #fff3cd; color: #856404; }
+        .difficulty-hard { background: #f8d7da; color: #721c24; }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-group-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .back-link {
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .back-link:hover { color: #ddd; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+            color: white;
+        }
+        .score-excellent { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+        .score-good { background: linear-gradient(135deg, #17a2b8 0%, #6610f2 100%); }
+        .score-average { background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: #333; }
+        .score-poor { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+        .result-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+        }
+        .result-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            min-width: 100px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .feedback-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+            border-left: 4px solid #667eea;
+        }
+        .feedback-section h5 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .feedback-summary {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .feedback-summary p {
+            margin: 0;
+            line-height: 1.6;
+            color: #333;
+        }
+        .feedback-section-block {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        .feedback-section-block h6 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .feedback-section-block ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .feedback-section-block li {
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+        .feedback-section-block.pros {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .feedback-section-block.pros h6 { color: #155724; }
+        .feedback-section-block.cons {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .feedback-section-block.cons h6 { color: #721c24; }
+        .feedback-section-block.suggestions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .feedback-section-block.suggestions h6 { color: #856404; }
+        .solution-container {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: left;
+        }
+        .solution-container h5 {
+            color: #ffc107;
+            margin-bottom: 15px;
+        }
+        #solutionEditor {
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .feedback-item {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        .feedback-number {
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .feedback-bullet {
+            margin: 8px 0;
+            padding-left: 10px;
+        }
+        .output-section {
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            text-align: left;
+        }
+        .hint-btn {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .hint-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+        .hint-btn:hover::after {
+            content: '⚠️ Using hint: -10 points';
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #ffc107;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+        .hint-btn:hover::before {
+            content: '';
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: #333;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .hint-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+            position: relative;
+        }
+        .hint-box.show { display: block; }
+        .hint-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #856404;
+            padding: 0;
+            line-height: 1;
+        }
+        .hint-close:hover { color: #533f03; }
+        .progress-timer {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .progress-timer-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+            border-radius: 3px;
+            transition: width 1s linear;
+        }
+        .test-cases {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .test-case {
+            display: flex;
+            gap: 20px;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .test-case:last-child { border-bottom: none; }
+        .test-input, .test-output {
+            flex: 1;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+        }
+        .test-label {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .skill-profile-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        .skill-profile-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .skill-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .skill-stat:last-child { border-bottom: none; }
+        .skill-stat-label { font-weight: 600; color: #333; }
+        .skill-stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .progress-bar-small {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .progress-bar-small .progress {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            border-radius: 4px;
+        }
+        .topic-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        .topic-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .topic-score {
+            color: #667eea;
+            font-size: 14px;
+        }
+        .level-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .level-beginner { background: #e3f2fd; color: #1976d2; }
+        .level-intermediate { background: #f3e5f5; color: #7b1fa2; }
+        .level-advanced { background: #fff3e0; color: #e65100; }
+        .level-expert { background: #e8f5e9; color: #2e7d32; }
+        .history-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+        .history-btn:hover {
+            transform: scale(1.1);
+        }
+        .history-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .history-modal.show { display: flex; }
+        .history-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .history-score {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .history-score.excellent { color: #28a745; }
+        .history-score.good { color: #17a2b8; }
+        .history-score.average { color: #ffc107; }
+         .history-score.poor { color: #dc3545; }
+     </style>
+ </head>
+<body>
+<main data-content>
+    <div class="main-container">
+        <a href="javascript:void(0)" class="back-link" onclick="if(window.navigateTo) window.navigateTo('/interview'); else window.location.href='/interview'">← Back to Settings</a>
+        <h1><span class="icon">💻</span> Live Coding Session</h1>
+
+
+        <div id="skillProfileContainer" class="row mb-4" style="display: none;">
+            <div class="col-lg-12">
+                <div class="skill-profile-section">
+                    <h3>📊 Your Progress and Skills</h3>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="skill-stat">
+                                    <span class="skill-stat-label">Overall Score:</span>
+                                <span class="skill-stat-value" id="overallScore">0%</span>
+                            </div>
+                            <div class="progress-bar-small">
+                                <div class="progress" id="overallScoreBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="skill-stat">
+                                    <span class="skill-stat-label">Level:</span>
+                                <span class="level-badge" id="levelBadge">BEGINNER</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="skill-stat">
+                                    <span class="skill-stat-label">Tasks Completed:</span>
+                                <span class="skill-stat-value" id="tasksCompleted">0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="skill-stat">
+                                    <span class="skill-stat-label">Attempts:</span>
+                                <span class="skill-stat-value" id="tasksAttempted">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h5>💪 Strongest Topic</h5>
+                            <p id="strongestTopic" style="color: #28a745; font-weight: bold;">-</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>📚 Recommended Topic</h5>
+                            <p id="recommendedTopic" style="color: #ffc107; font-weight: bold;">-</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h5>📈 Topic Progress</h5>
+                        <div id="topicProgressList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="setup" class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>🎯 Task Settings</h4>
+                        <form id="settingsForm">
+                            <div class="mb-3">
+                                <label for="category" class="form-label">🎯 Task Category</label>
+                                <select class="form-select" id="category">
+                                    <option value="">Any - All Categories</option>
+                                    <option value="STRING_MANIPULATION">String Manipulation</option>
+                                    <option value="DATA_STRUCTURES">Data Structures</option>
+                                    <option value="ALGORITHMS">Algorithms</option>
+                                    <option value="OOP_PATTERNS">OOP & Design Patterns</option>
+                                    <option value="SYSTEM_DESIGN">System Design</option>
+                                    <option value="WEB_DEVELOPMENT">Web Development</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="recommendedBtn">
+                                    🤖 Get Recommendation
+                                </button>
+                            </div>
+                            <div class="mb-3">
+                                <label for="language" class="form-label">🖥️ Programming Language</label>
+                                <select class="form-select" id="language" required>
+                                    <option value="java">Java</option>
+                                    <option value="python">Python</option>
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="c++">C++</option>
+                                    <option value="c">C</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="difficulty" class="form-label">📊 Difficulty Level</label>
+                                <select class="form-select" id="difficulty" required>
+                                    <option value="easy">🟢 Easy</option>
+                                    <option value="medium">🟡 Medium</option>
+                                    <option value="hard">🔴 Hard</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="topic" class="form-label">📚 Topic (optional)</label>
+                                <input type="text" class="form-control" id="topic" placeholder="Example: arrays, strings, recursion...">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="timedMode">
+                                    <label class="form-check-label" for="timedMode">
+                                        ⏰ Timed Mode
+                                    </label>
+                                    <small class="text-muted d-block mt-1">
+                                        AI will set the optimal time for completing the task. If time runs out - the task will be failed.
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="antiCheatMode">
+                                    <label class="form-check-label" for="antiCheatMode">
+                                        🛡️ Anti-Cheat Mode
+                                    </label>
+                                    <small class="text-muted d-block mt-1">
+                                        Fullscreen mode + blocking copy/paste. Violations are recorded in the report.
+                                    </small>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100" id="startBtn">
+                                🚀 Start Task
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="coding" class="d-none">
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <span id="taskTitle" class="h4"></span>
+                    <span id="difficultyBadge" class="difficulty-badge ms-2"></span>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span id="timer" class="timer-badge">⏱️ 00:00:00</span>
+                </div>
+            </div>
+            <div class="row">
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4>📝 Code Editor</h4>
+                            <div id="editor" style="height: 350px;"></div>
+                            <div class="btn-group-actions">
+                                <button id="runBtn" class="btn btn-warning">
+                                    ▶️ Run
+                                </button>
+                                <button id="codingSubmitBtn" class="btn btn-success">
+                                    ✅ Submit Solution
+                                </button>
+                                <button id="hintBtn" class="hint-btn">
+                                    💡 Hint
+                                </button>
+                            </div>
+                            <div id="hintBox" class="hint-box">
+                                <button class="hint-close" id="hintCloseBtn">✕</button>
+                                <div id="hintContent"></div>
+                            </div>
+                            <h4 class="mt-3">📤 Output</h4>
+                            <div id="output" class="output-area">Execution result will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4>📋 Task Description</h4>
+                            <div id="taskDescription" class="task-description"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="result" class="d-none">
+            <div class="result-card">
+                <div class="score-circle" id="scoreCircle">95</div>
+                <h3 id="resultTitle">🎉 Great Work!</h3>
+                <p id="resultSubtitle">You successfully completed the task</p>
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalTime">00:00:00</div>
+                        <div class="stat-label">⏱️ Time Spent</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="taskDifficulty">Easy</div>
+                        <div class="stat-label">📊 Difficulty</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="taskLanguage">Java</div>
+                        <div class="stat-label">💻 Language</div>
+                    </div>
+                </div>
+                <div class="feedback-section" id="feedbackSection">
+                </div>
+                <div style="margin-top: 25px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" id="newTaskBtn">
+                        🚀 New Task
+                    </button>
+                    <button class="btn btn-success" id="tryAgainBtn">
+                        🔄 Try Again
+                    </button>
+                    <button class="btn btn-warning d-none" id="showSolutionBtn">
+                        📖 Show Solution
+                    </button>
+                </div>
+                    <div id="solutionBox" class="d-none" style="margin-top: 20px;">
+                        <div class="solution-container">
+                            <h5>📖 Example Solution</h5>
+                        <div id="solutionEditor"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <button class="history-btn" id="historyBtn">🕒</button>
+
+
+        <div class="history-modal" id="historyModal">
+            <div class="history-content">
+                <h4>🕒 Task History</h4>
+                <div id="historyList"></div>
+                <button class="btn btn-primary w-100" id="closeHistoryBtn">Close</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let editor;
+        let solutionEditor;
+        let startTime;
+        let lcTimerInterval;
+        let currentTask;
+        let hintUsed = false;
+        let timeRemaining = 0;
+        let isTimedMode = false;
+        let timeExpired = false;
+        let liveCodingAntiCheat = null
+
+        let liveCodingInitialized = false;
+
+
+        function initLiveCodingPage() {
+            const path = (window.location.pathname || '').replace(/\/$/, '') || '/';
+            if (path !== '/live-coding' && path !== '/live-coding.html') return;
+            if (liveCodingInitialized) return;
+
+            const editorEl = document.getElementById('editor');
+            const solutionEditorEl = document.getElementById('solutionEditor');
+            const recommendedBtn = document.getElementById('recommendedBtn');
+            if (!editorEl || !solutionEditorEl || !recommendedBtn) return;
+
+            liveCodingInitialized = true;
+
+            editor = ace.edit("editor");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/java");
+            editor.setFontSize(14);
+            editor.setShowPrintMargin(false);
+            editor.setValue("// Write your code here\n", 1);
+
+
+            solutionEditor = ace.edit("solutionEditor");
+            solutionEditor.setTheme("ace/theme/monokai");
+            solutionEditor.session.setMode("ace/mode/java");
+            solutionEditor.setFontSize(13);
+            solutionEditor.setShowPrintMargin(false);
+            solutionEditor.setReadOnly(true);
+            solutionEditor.setHighlightActiveLine(false);
+            solutionEditor.renderer.$cursorLayer.element.style.display = "none";
+
+
+            loadUserSkillProfile();
+
+
+            recommendedBtn.addEventListener('click', async function() {
+                await loadRecommendedTask();
+            });
+        }
+
+        initLiveCodingPage();
+
+
+        document.addEventListener('spa:route', function(e) {
+            if (!e || !e.detail) return;
+            const path = e.detail.path;
+            const isLiveCoding = path === '/live-coding' || path === '/live-coding.html';
+
+            if (!isLiveCoding) {
+
+                if (liveCodingAntiCheat) {
+                    console.log('🧹 Stopping live-coding anti-cheat on navigation');
+                    liveCodingAntiCheat.stop();
+                    liveCodingAntiCheat = null;
+                }
+                if (lcTimerInterval) {
+                    clearInterval(lcTimerInterval);
+                    lcTimerInterval = null;
+                }
+
+
+                const setupEl  = document.getElementById('setup');
+                const codingEl = document.getElementById('coding');
+                const resultEl = document.getElementById('result');
+                if (setupEl)  setupEl.classList.remove('d-none');
+                if (codingEl) codingEl.classList.add('d-none');
+                if (resultEl) resultEl.classList.add('d-none');
+
+                const startBtn = document.getElementById('startBtn');
+                if (startBtn) {
+                    startBtn.innerHTML = '🚀 Start Task';
+                    startBtn.disabled  = false;
+                }
+                const timerEl = document.getElementById('timer');
+                if (timerEl) {
+                    timerEl.textContent = '⏱️ 00:00:00';
+                    timerEl.style.background = '';
+                    timerEl.style.animation  = '';
+                    timerEl.classList.remove('countdown-mode');
+                }
+
+                isTimedMode   = false;
+                timeExpired   = false;
+                timeRemaining = 0;
+                hintUsed      = false;
+                currentTask   = null;
+
+
+                liveCodingInitialized = false;
+
+            } else {
+
+                initLiveCodingPage();
+            }
+        });
+
+        async function loadUserSkillProfile() {
+            try {
+                const userStr = localStorage.getItem('currentUser');
+                if (!userStr) {
+                    console.log('User not logged in');
+                    return;
+                }
+
+                const user = JSON.parse(userStr);
+                const response = await window.authFetch(`/api/coding/profile/${user.id}`);
+
+                if (!response.ok) {
+                    console.warn('Failed to load skill profile');
+                    return;
+                }
+
+                const profile = await response.json();
+                lcDisplaySkillProfile(profile);
+            } catch (error) {
+                console.error('Error loading skill profile:', error);
+            }
+        }
+
+        function lcDisplaySkillProfile(profile) {
+
+            document.getElementById('skillProfileContainer').style.display = 'block';
+
+
+            const overallScore = Math.round(profile.overallScore || 0);
+            document.getElementById('overallScore').textContent = overallScore + '%';
+            document.getElementById('overallScoreBar').style.width = overallScore + '%';
+            document.getElementById('tasksCompleted').textContent = profile.totalTasksCompleted || 0;
+            document.getElementById('tasksAttempted').textContent = profile.totalTasksAttempted || 0;
+
+
+            const levelBadge = document.getElementById('levelBadge');
+            levelBadge.textContent = profile.currentLevel || 'BEGINNER';
+            levelBadge.className = 'level-badge level-' + (profile.currentLevel || 'beginner').toLowerCase();
+
+
+            document.getElementById('strongestTopic').textContent = profile.strongestTopic || 'Needs practice';
+            document.getElementById('recommendedTopic').textContent = profile.recommendedTopic || 'Any topic';
+
+
+            if (profile.topicProgress && profile.topicProgress.length > 0) {
+                const topicList = document.getElementById('topicProgressList');
+                topicList.innerHTML = profile.topicProgress.map(topic => `
+                    <div class="topic-item">
+                        <div class="topic-name">${topic.topicName}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="progress-bar-small" style="flex: 1; margin-right: 10px;">
+                                <div class="progress" style="width: ${topic.averageScore}%"></div>
+                            </div>
+                            <span class="topic-score">${Math.round(topic.averageScore)}% (${topic.tasksCompleted} tasks)</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function loadRecommendedTask() {
+            try {
+                const userStr = localStorage.getItem('currentUser');
+                if (!userStr) {
+                    alert('Please log in first');
+                    return;
+                }
+
+                const user = JSON.parse(userStr);
+                console.log('Loading recommendation for user:', user.id);
+
+                const response = await window.authFetch(`/api/coding/recommend/${user.id}`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Recommendation error response:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const recommendation = await response.json();
+                console.log('Recommendation received:', recommendation);
+
+
+                if (recommendation.category) {
+                    document.getElementById('category').value = recommendation.category;
+                }
+                if (recommendation.difficulty) {
+                    document.getElementById('difficulty').value = recommendation.difficulty.toLowerCase();
+                }
+                if (recommendation.language) {
+                    document.getElementById('language').value = recommendation.language.toLowerCase();
+                }
+
+                alert('✨ Recommendation loaded! Topic: ' + (recommendation.recommendedTopic || recommendation.category));
+            } catch (error) {
+                console.error('Error loading recommendation:', error);
+                alert('Error loading recommendation: ' + error.message);
+            }
+        }
+
+
+        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            sessionStorage.removeItem('antiCheatReport');
+            const oldReport = document.getElementById('antiCheatReportLiveCoding');
+            if (oldReport) oldReport.remove();
+
+            const btn = document.getElementById('startBtn');
+            btn.innerHTML = '<span class="loading-spinner"></span> Generating task...';
+            btn.disabled = true;
+
+            const language = document.getElementById('language').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const category = document.getElementById('category').value;
+            const topic = document.getElementById('topic').value;
+            const timedMode = document.getElementById('timedMode').checked;
+
+            try {
+
+                const endpoint = category ? '/api/coding/generate-task-filtered' : '/api/coding/generate-task';
+                const payload = category ?
+                    { language, difficulty, category, timedMode, adaptiveMode: false } :
+                    { language, difficulty, topic, timedMode };
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('HTTP error ' + response.status);
+
+                const task = await response.json();
+                currentTask = task;
+                startCoding(task, language, difficulty);
+            } catch (error) {
+                alert('Error generating task: ' + error.message);
+                btn.innerHTML = '🚀 Start Task';
+                btn.disabled = false;
+            }
+        });
+
+        function startCoding(task, language, difficulty) {
+
+            sessionStorage.removeItem('antiCheatReport');
+            document.getElementById('setup').classList.add('d-none');
+            document.getElementById('coding').classList.remove('d-none');
+
+            document.getElementById('taskTitle').textContent = task.title;
+            const badge = document.getElementById('difficultyBadge');
+            badge.textContent = difficulty === 'easy' ? '🟢 Easy' : difficulty === 'medium' ? '🟡 Medium' : '🔴 Hard';
+            badge.className = 'difficulty-badge difficulty-' + difficulty;
+
+            document.getElementById('taskDescription').innerHTML = formatDescription(task.description);
+
+            editor.session.setMode(`ace/mode/${mapLanguageToAceMode(language)}`);
+
+            const code = task.starterCode && task.starterCode.trim() ? task.starterCode : getDefaultCode(language);
+            editor.setValue(code, 1);
+
+            startTime = Date.now();
+            const antiCheatChecked = document.getElementById('antiCheatMode')?.checked;
+            if (antiCheatChecked && window.AntiCheatManager) {
+                liveCodingAntiCheat = new AntiCheatManager({
+                    enabled: true,
+                    enforceFullscreen: true,
+                    blockCopyPaste: true,
+                    mode: 'coding',
+                    onViolation: (v) => console.log('🛡️ Live Coding Violation:', v)
+                });
+                liveCodingAntiCheat.start();
+            } else {
+                liveCodingAntiCheat = null;
+            }
+
+            if (task.timeLimit && task.timeLimit > 0) {
+                timeRemaining = task.timeLimit;
+                isTimedMode = true;
+                document.getElementById('timer').classList.add('countdown-mode');
+                lcTimerInterval = setInterval(updateCountdownTimer, 1000);
+
+                const minutes = Math.floor(task.timeLimit / 60);
+                showTimedModeNotification(minutes);
+            } else {
+                isTimedMode = false;
+                document.getElementById('timer').classList.remove('countdown-mode');
+                lcTimerInterval = setInterval(lcUpdateTimer, 1000);
+            }
+        }
+
+        function showTimedModeNotification(minutes) {
+            const notification = document.createElement('div');
+            notification.id = 'timedModeNotification';
+            notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 16px;
+        padding: 30px 40px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        z-index: 100000;
+        text-align: center;
+        max-width: 400px;
+        animation: fadeIn 0.3s ease;
+    `;
+            notification.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 15px;">⏰</div>
+        <h3 style="color: #333; margin-bottom: 10px;">Timed Mode!</h3>
+        <p style="color: #666; margin-bottom: 20px; line-height: 1.5;">
+            You have <strong style="color: #667eea;">${minutes} minutes</strong> to complete this task.
+        </p>
+        <button onclick="this.closest('#timedModeNotification').remove(); document.getElementById('timedModeOverlay').remove();"
+                style="padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                       color: white; border: none; border-radius: 10px; font-size: 16px;
+                       font-weight: bold; cursor: pointer;">
+            🚀 Let's Go!
+        </button>
+    `;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'timedModeOverlay';
+            overlay.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 99999;
+    `;
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                const el = document.getElementById('timedModeNotification');
+                const ov = document.getElementById('timedModeOverlay');
+                if (el) el.remove();
+                if (ov) ov.remove();
+            }, 5000);
+        }
+
+        function getDefaultCode(language) {
+            switch (language.toLowerCase()) {
+                case 'java':
+                    return 'public class Solution {\n    public static void main(String[] args) {\n        // Your code here\n        System.out.println("Hello World!");\n    }\n}';
+                case 'python':
+                    return '# Your code here\n\ndef solution():\n    print("Hello World!")\n\nif __name__ == "__main__":\n    solution()';
+                case 'javascript':
+                    return '// Your code here\n\nfunction solution() {\n    console.log("Hello World!");\n}\n\nsolution();';
+                case 'c++':
+                    return '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    cout << "Hello World!" << endl;\n    return 0;\n}';
+                case 'c':
+                    return '#include <stdio.h>\n\nint main() {\n    // Your code here\n    printf("Hello World!\\n");\n    return 0;\n}';
+                default:
+                    return '// Your code here';
+            }
+        }
+
+        function lcUpdateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const hours = Math.floor(elapsed / 3600);
+            const minutes = Math.floor((elapsed % 3600) / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timer').textContent =
+                `⏱️ ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateCountdownTimer() {
+            timeRemaining--;
+
+            const hours = Math.floor(timeRemaining / 3600);
+            const minutes = Math.floor((timeRemaining % 3600) / 60);
+            const seconds = timeRemaining % 60;
+
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = `⏰ ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+
+            if (timeRemaining <= 60) {
+                timerElement.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+                timerElement.style.animation = 'pulse 0.5s ease-in-out infinite';
+            } else if (timeRemaining <= 180) {
+                timerElement.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
+            }
+
+
+            if (timeRemaining <= 0) {
+                clearInterval(lcTimerInterval);
+                timeExpired = true;
+                showTimeExpiredResult();
+            }
+        }
+
+        function showTimeExpiredResult() {
+            if (liveCodingAntiCheat) {
+                const report = liveCodingAntiCheat.getReport();
+                sessionStorage.setItem('antiCheatReport', JSON.stringify(report));
+                liveCodingAntiCheat.stop();
+            } else {
+                sessionStorage.removeItem('antiCheatReport');
+            }
+
+
+            document.getElementById('runBtn').disabled = true;
+            document.getElementById('codingSubmitBtn').disabled = true;
+            document.getElementById('hintBtn').disabled = true;
+
+
+            document.getElementById('coding').classList.add('d-none');
+            document.getElementById('result').classList.remove('d-none');
+
+            const scoreCircle = document.getElementById('scoreCircle');
+            scoreCircle.textContent = '⏰';
+            scoreCircle.className = 'score-circle score-poor';
+
+            document.getElementById('resultTitle').textContent = '⏰ Time is Up!';
+            document.getElementById('resultSubtitle').textContent = 'Unfortunately, you did not have time to complete the task. Try again!';
+
+            const elapsed = currentTask.timeLimit;
+            const hours = Math.floor(elapsed / 3600);
+            const minutes = Math.floor((elapsed % 3600) / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('totalTime').textContent =
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('taskDifficulty').textContent = getDifficultyLabel(currentTask.difficulty);
+            document.getElementById('taskLanguage').textContent = currentTask.language.toUpperCase();
+
+
+             document.getElementById('feedbackSection').innerHTML = `
+                <div class="feedback-summary" style="border-left-color: #dc3545;">
+                    <p><strong>💡 Tip:</strong> Try again! Perhaps you should first think about the algorithm before writing code, or practice on simpler tasks.</p>
+                </div>
+            `;
+
+
+            document.getElementById('showSolutionBtn').style.display = 'none';
+            renderAntiCheatReportInResults();
+        }
+
+
+        document.getElementById('runBtn').addEventListener('click', async function() {
+            const btn = this;
+            btn.innerHTML = '<span class="loading-spinner"></span> Compiling...';
+            btn.disabled = true;
+
+            const code = editor.getValue();
+            const submission = {
+                code,
+                language: currentTask.language,
+                taskId: currentTask.id,
+                taskTitle: currentTask.title,
+                taskDescription: currentTask.description,
+                timeSpent: Math.floor((Date.now() - startTime) / 1000),
+                difficulty: currentTask.difficulty
+            };
+
+            try {
+                const response = await fetch('/api/coding/compile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(submission)
+                });
+                const result = await response.json();
+                document.getElementById('output').textContent = result.stackTrace || result.feedback || 'Execution complete';
+            } catch (error) {
+                document.getElementById('output').textContent = '❌ Error: ' + error.message;
+            } finally {
+                btn.innerHTML = '▶️ Run';
+                btn.disabled = false;
+            }
+        });
+
+
+        document.getElementById('codingSubmitBtn').addEventListener('click', async function() {
+
+             if (timeExpired) {
+                alert('⏰ Time is up! You cannot submit the solution.');
+                return;
+             }
+
+             const btn = this;
+             btn.innerHTML = '<span class="loading-spinner"></span> Evaluating...';
+             btn.disabled = true;
+
+            const code = editor.getValue();
+            const submission = {
+                code,
+                language: currentTask.language,
+                taskId: currentTask.id,
+                taskTitle: currentTask.title,
+                taskDescription: currentTask.description,
+                timeSpent: Math.floor((Date.now() - startTime) / 1000),
+                difficulty: currentTask.difficulty
+            };
+
+            try {
+                const response = await fetch('/api/coding/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(submission)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('output').innerHTML =
+                        `<span style="color: #00ff00;">✅ Success!</span>\n\n${result.feedback}`;
+                    showResult(result);
+                } else {
+                    document.getElementById('output').innerHTML =
+                        `<span style="color: #ff6b6b;">❌ Compilation Error:</span>\n\n${result.stackTrace}`;
+                }
+            } catch (error) {
+                document.getElementById('output').textContent = '❌ Error: ' + error.message;
+            } finally {
+                btn.innerHTML = '✅ Submit Solution';
+                btn.disabled = false;
+            }
+        });
+
+        /**
+         * Renders the anti-cheat report into the live-coding results section.
+         * If anti-cheat was not active — does nothing.
+         */
+        function renderAntiCheatReportInResults() {
+            const reportJson = sessionStorage.getItem('antiCheatReport');
+            if (!reportJson) return;
+
+            let report;
+            try {
+                report = JSON.parse(reportJson);
+            } catch (e) {
+                console.error('Invalid anti-cheat report:', e);
+                return;
+            }
+
+            if (!report.enabled) return;
+
+
+            const resultCard = document.querySelector('.result-card');
+            if (!resultCard) return;
+
+
+            if (document.getElementById('antiCheatReportLiveCoding')) return;
+
+            const violationColor = report.totalViolations > 0 ? '#dc3545' : '#28a745';
+            const bgColor = report.totalViolations > 0
+                ? 'rgba(220, 53, 69, 0.08)'
+                : 'rgba(40, 167, 69, 0.08)';
+            const borderColor = report.totalViolations > 0
+                ? 'rgba(220, 53, 69, 0.3)'
+                : 'rgba(40, 167, 69, 0.3)';
+
+            const reportDiv = document.createElement('div');
+            reportDiv.id = 'antiCheatReportLiveCoding';
+            reportDiv.style.cssText = `
+        background: ${bgColor};
+        border: 1px solid ${borderColor};
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        text-align: left;
+    `;
+
+            reportDiv.innerHTML = `
+        <h5 style="color: ${violationColor}; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            🛡️ Anti-Cheat Report
+        </h5>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 15px;">
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <div style="font-size: 24px; font-weight: bold; color: ${violationColor};">
+                    ${report.totalViolations}
+                </div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                    Total Violations
+                </div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <div style="font-size: 24px; font-weight: bold; color: #ffc107;">
+                    ${report.fullscreenExits}
+                </div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                    Fullscreen Exits
+                </div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <div style="font-size: 24px; font-weight: bold; color: #ffc107;">
+                    ${report.copyAttempts}
+                </div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                    Copy Attempts
+                </div>
+            </div>
+            <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <div style="font-size: 24px; font-weight: bold; color: #ffc107;">
+                    ${report.pasteAttempts}
+                </div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                    Paste Attempts
+                </div>
+            </div>
+        </div>
+
+        ${report.violations.length > 0 ? `
+            <details style="margin-top: 12px;">
+                <summary style="cursor: pointer; color: #666; font-size: 13px; user-select: none;">
+                    📋 Show Violation Timeline (${report.violations.length})
+                </summary>
+                <div style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+                    ${report.violations.map((v, i) => `
+                        <div style="
+                            padding: 8px 12px;
+                            margin-bottom: 6px;
+                            background: white;
+                            border-left: 3px solid #dc3545;
+                            border-radius: 4px;
+                            font-size: 12px;
+                        ">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #dc3545; font-weight: 600;">
+                                    #${i + 1} ${v.type}
+                                </span>
+                                <span style="color: #999; font-size: 11px;">
+                                    ${new Date(v.timestamp).toLocaleTimeString('uk-UA')}
+                                </span>
+                            </div>
+                            <div style="color: #555; margin-top: 4px;">
+                                ${v.details}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </details>
+        ` : `
+            <p style="color: #28a745; text-align: center; padding: 8px; margin: 0; font-size: 14px;">
+                ✅ No violations detected. Clean work!
+            </p>
+        `}
+    `;
+
+
+            const actionButtons = resultCard.querySelector('[style*="display: flex"][style*="justify-content: center"]');
+            if (actionButtons) {
+                actionButtons.parentNode.insertBefore(reportDiv, actionButtons);
+            } else {
+                resultCard.appendChild(reportDiv);
+            }
+        }
+
+        function showResult(result) {
+
+            clearInterval(lcTimerInterval);
+            const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+
+            if (liveCodingAntiCheat) {
+                const report = liveCodingAntiCheat.getReport();
+                sessionStorage.setItem('antiCheatReport', JSON.stringify(report));
+                liveCodingAntiCheat.stop();
+            } else {
+
+                sessionStorage.removeItem('antiCheatReport');
+            }
+
+
+            saveToHistory(result);
+            recordTaskProgress(result, timeSpent);
+
+            document.getElementById('coding').classList.add('d-none');
+            document.getElementById('result').classList.remove('d-none');
+
+
+            let score = result.score || 0;
+            let feedbackData = null;
+
+
+            try {
+                feedbackData = JSON.parse(result.feedback);
+                score = feedbackData.score || score;
+            } catch (e) {
+
+                feedbackData = {
+                    summary: result.feedback,
+                    pros: [],
+                    cons: [],
+                    suggestions: []
+                };
+            }
+
+
+            const scoreCircle = document.getElementById('scoreCircle');
+            scoreCircle.textContent = score;
+            scoreCircle.className = 'score-circle';
+
+
+            const resultTitle = document.getElementById('resultTitle');
+            const resultSubtitle = document.getElementById('resultSubtitle');
+
+            if (score >= 90) {
+                scoreCircle.classList.add('score-excellent');
+                resultTitle.textContent = '🎉 Excellent Work!';
+                resultSubtitle.textContent = 'You solved the task brilliantly!';
+            } else if (score >= 70) {
+                scoreCircle.classList.add('score-good');
+                resultTitle.textContent = '👍 Good!';
+                resultSubtitle.textContent = 'You successfully completed the task.';
+            } else if (score >= 50) {
+                scoreCircle.classList.add('score-average');
+                resultTitle.textContent = '📝 Not Bad';
+                resultSubtitle.textContent = 'There is room for improvement, but overall good.';
+            } else {
+                scoreCircle.classList.add('score-poor');
+                resultTitle.textContent = '💪 Try Again!';
+                resultSubtitle.textContent = 'Practice makes perfect.';
+            }
+
+
+            document.getElementById('totalTime').textContent = formatTime(timeSpent);
+             document.getElementById('taskDifficulty').textContent =
+                currentTask.difficulty === 'easy' ? '🟢 Easy' :
+                currentTask.difficulty === 'medium' ? '🟡 Medium' : '🔴 Hard';
+            document.getElementById('taskLanguage').textContent = currentTask.language.toUpperCase();
+
+
+            let programOutput = result.output || '';
+
+
+            document.getElementById('feedbackSection').innerHTML = buildFeedbackHTML(feedbackData, programOutput);
+
+
+            if (score <= 20) {
+                document.getElementById('showSolutionBtn').classList.remove('d-none');
+            } else {
+                document.getElementById('showSolutionBtn').classList.add('d-none');
+            }
+            document.getElementById('solutionBox').classList.add('d-none');
+            renderAntiCheatReportInResults();
+        }
+
+        function buildFeedbackHTML(data, programOutput) {
+             let html = '<h5>📊 Solution Analysis</h5>';
+
+
+            if (programOutput && programOutput.trim()) {
+                html += `
+                    <div class="output-section" style="margin-bottom: 15px;">
+                        <strong style="color: #aaa;">📤 Program Output:</strong>
+                        <code style="color: #00ff00; display: block; margin-top: 5px;">${programOutput}</code>
+                    </div>
+                `;
+            }
+
+
+            if (data.summary) {
+                html += `
+                    <div class="feedback-summary">
+                        <p>${data.summary}</p>
+                    </div>
+                `;
+            }
+
+
+            if (data.pros && data.pros.length > 0) {
+                html += `
+                    <div class="feedback-section-block pros">
+                        <h6>✅ Strengths</h6>
+                        <ul>
+                            ${data.pros.map(p => `<li>${p}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+
+            if (data.cons && data.cons.length > 0) {
+                html += `
+                    <div class="feedback-section-block cons">
+                        <h6>❌ Weaknesses</h6>
+                        <ul>
+                            ${data.cons.map(c => `<li>${c}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+
+            if (data.suggestions && data.suggestions.length > 0) {
+                html += `
+                    <div class="feedback-section-block suggestions">
+                        <h6>💡 Recommendations</h6>
+                        <ul>
+                            ${data.suggestions.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        function extractFeedbackText(feedback) {
+            let text = feedback;
+
+
+            text = text.replace(/✅ Output:[\s\S]*?\n\n/g, '');
+            text = text.replace(/✅ Output:[\s\S]*?\n\n/g, '');
+
+
+            text = text.replace(/📊 Score: \d+\/100\n?/g, '');
+
+
+            text = text.trim();
+
+
+            if (text.includes('\n')) {
+                const lines = text.split('\n').filter(l => l.trim());
+
+                if (lines[0] && lines[0].includes('Score')) {
+                    text = lines.slice(1).join('\n');
+                } else {
+                    text = lines.join('\n');
+                }
+            }
+
+            return text || 'Code executed successfully!';
+        }
+
+        function formatFeedback(feedback) {
+            if (!feedback) return '';
+
+            let html = feedback
+
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+
+                .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="feedback-item"><span class="feedback-number">$1</span><span>$2</span></div>')
+
+                .replace(/^[-•]\s+(.+)$/gm, '<div class="feedback-bullet">• $1</div>')
+
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>');
+
+            return html;
+        }
+
+
+        document.getElementById('showSolutionBtn').addEventListener('click', async function() {
+            const btn = this;
+            const solutionBox = document.getElementById('solutionBox');
+
+            if (!solutionBox.classList.contains('d-none')) {
+                solutionBox.classList.add('d-none');
+                btn.textContent = '📖 Show Solution';
+                return;
+            }
+
+            btn.innerHTML = '<span class="loading-spinner"></span> Generating...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/coding/solution', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        taskTitle: currentTask.title,
+                        taskDescription: currentTask.description,
+                        language: currentTask.language
+                    })
+                });
+                const data = await response.json();
+
+
+                solutionEditor.session.setMode(`ace/mode/${mapLanguageToAceMode(currentTask.language)}`);
+                solutionEditor.setValue(data.solution, 1);
+                solutionBox.classList.remove('d-none');
+                btn.textContent = '📖 Hide Solution';
+            } catch (error) {
+                alert('Error retrieving solution: ' + error.message);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+
+        document.getElementById('newTaskBtn').addEventListener('click', function() {
+
+            const oldReport = document.getElementById('antiCheatReportLiveCoding');
+            if (oldReport) oldReport.remove();
+            sessionStorage.removeItem('antiCheatReport');
+
+
+            if (liveCodingAntiCheat) {
+                liveCodingAntiCheat.stop();
+                liveCodingAntiCheat = null;
+            }
+
+
+            hintUsed = false;
+
+            document.getElementById('result').classList.add('d-none');
+            document.getElementById('setup').classList.remove('d-none');
+             document.getElementById('startBtn').innerHTML = '🚀 Start Task';
+             document.getElementById('startBtn').disabled = false;
+            document.getElementById('output').textContent = 'Output will appear here...';
+
+
+            isTimedMode = false;
+            timeExpired = false;
+            timeRemaining = 0;
+
+
+            document.getElementById('runBtn').disabled = false;
+            document.getElementById('codingSubmitBtn').disabled = false;
+            document.getElementById('hintBtn').disabled = false;
+
+
+            const timerElement = document.getElementById('timer');
+            timerElement.style.background = '';
+            timerElement.style.animation = '';
+            timerElement.classList.remove('countdown-mode');
+
+
+            document.getElementById('showSolutionBtn').style.display = '';
+        });
+
+        document.getElementById('tryAgainBtn').addEventListener('click', function() {
+
+            const oldReport = document.getElementById('antiCheatReportLiveCoding');
+            if (oldReport) oldReport.remove();
+            sessionStorage.removeItem('antiCheatReport');
+
+
+            if (liveCodingAntiCheat) {
+                liveCodingAntiCheat.stop();
+                liveCodingAntiCheat = new AntiCheatManager({
+                    enabled: true,
+                    enforceFullscreen: true,
+                    blockCopyPaste: true,
+                    mode: 'coding',
+                    onViolation: (v) => console.log('🛡️ Live Coding Violation:', v)
+                });
+                liveCodingAntiCheat.start();
+            }
+
+
+            hintUsed = false;
+
+
+            document.getElementById('result').classList.add('d-none');
+            document.getElementById('coding').classList.remove('d-none');
+            document.getElementById('output').textContent = 'Output will appear here...';
+
+
+            document.getElementById('hintBox').classList.remove('show');
+
+
+            document.getElementById('runBtn').disabled = false;
+            document.getElementById('codingSubmitBtn').disabled = false;
+            document.getElementById('hintBtn').disabled = false;
+
+
+            const timerElement = document.getElementById('timer');
+            timerElement.style.background = '';
+            timerElement.style.animation = '';
+
+
+            startTime = Date.now();
+            timeExpired = false;
+
+            if (isTimedMode && currentTask.timeLimit) {
+                timeRemaining = currentTask.timeLimit;
+                timerElement.classList.add('countdown-mode');
+                lcTimerInterval = setInterval(updateCountdownTimer, 1000);
+            } else {
+                timerElement.classList.remove('countdown-mode');
+                lcTimerInterval = setInterval(lcUpdateTimer, 1000);
+            }
+        });
+
+        function getDifficultyLabel(difficulty) {
+            switch (difficulty) {
+                case 'easy': return '🟢 Easy';
+                case 'medium': return '🟡 Medium';
+                case 'hard': return '🔴 Hard';
+                default: return difficulty;
+            }
+        }
+
+
+        document.getElementById('hintBtn').addEventListener('click', async function() {
+            const btn = this;
+            const hintBox = document.getElementById('hintBox');
+
+            if (hintBox.classList.contains('show')) {
+                hintBox.classList.remove('show');
+                return;
+            }
+
+            btn.innerHTML = '<span class="loading-spinner"></span>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/coding/hint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        taskTitle: currentTask.title,
+                        taskDescription: currentTask.description,
+                        language: currentTask.language
+                    })
+                });
+                const data = await response.json();
+
+                hintUsed = true;
+                document.getElementById('hintContent').innerHTML = `<strong>💡 Hint:</strong><br>${data.hint}`;
+                hintBox.classList.add('show');
+            } catch (error) {
+                document.getElementById('hintContent').textContent = 'Failed to get hint';
+                hintBox.classList.add('show');
+            } finally {
+                 btn.innerHTML = '💡 Hint';
+                 btn.disabled = false;
+            }
+        });
+
+
+        document.getElementById('hintCloseBtn').addEventListener('click', function() {
+            document.getElementById('hintBox').classList.remove('show');
+        });
+
+
+        document.getElementById('historyBtn').addEventListener('click', function() {
+            const modal = document.getElementById('historyModal');
+            modal.classList.toggle('show');
+            if (modal.classList.contains('show')) {
+                loadHistory();
+            }
+        });
+
+
+        document.getElementById('closeHistoryBtn').addEventListener('click', function() {
+            document.getElementById('historyModal').classList.remove('show');
+        });
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('codingHistory') || '[]');
+            const historyList = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No completed tasks yet</p>';
+                return;
+            }
+
+            historyList.innerHTML = history.slice(-10).reverse().map(item => `
+                <div class="history-item">
+                    <div>
+                        <strong>${item.title || 'Task'}</strong>
+                        <div style="font-size: 12px; color: #666;">${item.language} • ${item.difficulty} • ${formatTime(item.timeSpent)}</div>
+                    </div>
+                    <div class="history-score ${getScoreClass(item.score)}">${item.score}</div>
+                </div>
+            `).join('');
+        }
+
+        function saveToHistory(result) {
+            const history = JSON.parse(localStorage.getItem('codingHistory') || '[]');
+            history.push({
+                title: currentTask.title,
+                language: currentTask.language,
+                difficulty: currentTask.difficulty,
+                score: result.score,
+                timeSpent: Math.floor((Date.now() - startTime) / 1000),
+                date: new Date().toISOString()
+            });
+            localStorage.setItem('codingHistory', JSON.stringify(history));
+        }
+
+        async function recordTaskProgress(result, timeSpent) {
+            try {
+                const userStr = localStorage.getItem('currentUser');
+                if (!userStr) return;
+
+                const user = JSON.parse(userStr);
+                const hintsUsed = hintUsed ? 1 : 0;
+
+
+                const submission = {
+                    taskId: currentTask.id,
+                    taskTitle: currentTask.title,
+                    taskDescription: currentTask.description,
+                    language: currentTask.language,
+                    difficulty: currentTask.difficulty,
+                    score: result.score || 0,
+                    code: editor.getValue(),
+                    feedback: result.feedback || '',
+                    timeSpentSeconds: timeSpent,
+                    hintsUsed: hintsUsed
+                };
+
+
+                const response = await window.authFetch('/api/coding/progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(submission)
+                });
+
+                if (response.ok) {
+                    console.log('Progress recorded successfully');
+
+                    setTimeout(() => loadUserSkillProfile(), 500);
+                } else {
+                    console.warn('Failed to record progress');
+                }
+            } catch (error) {
+                console.error('Error recording progress:', error);
+
+            }
+        }
+
+        function getScoreClass(score) {
+            if (score >= 90) return 'excellent';
+            if (score >= 70) return 'good';
+            if (score >= 50) return 'average';
+            return 'poor';
+        }
+
+        function mapLanguageToAceMode(language) {
+            const modes = {
+                'java': 'java',
+                'python': 'python',
+                'javascript': 'javascript',
+                'c++': 'c_cpp',
+                'c': 'c_cpp'
+            };
+            return modes[language.toLowerCase()] || 'javascript';
+        }
+
+        function formatDescription(description) {
+            if (!description) return '';
+
+            let html = description
+                .replace(/^### (.+)$/gm, '<h5>$1</h5>')
+                .replace(/^## (.+)$/gm, '<h4>$1</h4>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/^- (.+)$/gm, '<li>$1</li>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+
+            html = html.replace(/(<li>.*?<\/li>)(<br>)?(<li>)/g, '$1$3');
+            html = html.replace(/(<li>.*<\/li>)+/g, '<ul>$&</ul>');
+
+            return '<p>' + html + '</p>';
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html>
+

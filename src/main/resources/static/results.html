@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Results - AI Interviewer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🎯</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        main[data-content] {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            min-height: calc(100vh - 70px);
+            color: white;
+            padding: 40px 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 {
+            font-size: 32px; margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header p { color: rgba(255,255,255,0.6); }
+        .overall-score {
+            background: rgba(255,255,255,0.05); border-radius: 20px;
+            padding: 40px; text-align: center; margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .score-circle {
+            width: 150px; height: 150px; border-radius: 50%;
+            background: conic-gradient(#667eea 0deg, #667eea var(--score-deg), rgba(255,255,255,0.1) var(--score-deg));
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px; position: relative;
+        }
+        .score-circle::before {
+            content: ''; position: absolute; width: 120px; height: 120px;
+            background: #1a1a2e; border-radius: 50%;
+        }
+        .score-value { position: relative; font-size: 42px; font-weight: 700; z-index: 1; }
+        .score-label { font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
+        .verdict { font-size: 16px; color: rgba(255,255,255,0.9); font-weight: 500; }
+        .categories { margin-bottom: 30px; }
+        .category {
+            background: rgba(255,255,255,0.05); border-radius: 12px;
+            padding: 15px 20px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .category-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .category-name { font-weight: 500; }
+        .category-score { color: #667eea; font-weight: 700; }
+        .category-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .category-bar-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 3px; transition: width 0.5s; }
+        .feedback-section { margin-bottom: 30px; }
+        .feedback-section h3 { font-size: 18px; margin-bottom: 15px; }
+        .feedback-list { list-style: none; }
+        .feedback-list li { padding: 10px 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #667eea; }
+        .feedback-list.strengths li { border-left-color: #28a745; }
+        .feedback-list.improvements li { border-left-color: #ffc107; }
+        .feedback-list.topics li { border-left-color: #17a2b8; }
+
+        /* Warning banner */
+        .transcript-warning {
+            background: rgba(255, 193, 7, 0.12); border: 1px solid rgba(255, 193, 7, 0.4);
+            border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
+            display: flex; align-items: flex-start; gap: 12px;
+        }
+        .transcript-warning-icon { font-size: 24px; flex-shrink: 0; }
+        .transcript-warning-text { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.6; }
+        .transcript-warning-title { font-weight: 600; color: #ffc107; margin-bottom: 4px; }
+
+        .answer-detail {
+            background: rgba(255,255,255,0.04); border-radius: 12px;
+            padding: 16px; margin-bottom: 12px; border-left: 4px solid #667eea;
+        }
+        .answer-question { font-weight: 600; color: #667eea; margin-bottom: 8px; font-size: 14px; }
+        .answer-content { margin-bottom: 8px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+        .answer-label { font-size: 12px; color: rgba(255,255,255,0.5); text-transform: uppercase; margin-top: 8px; }
+        .answer-accuracy { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 4px; }
+        .accuracy-high { background-color: rgba(40, 167, 69, 0.3); color: #28a745; }
+        .accuracy-medium { background-color: rgba(255, 193, 7, 0.3); color: #ffc107; }
+        .accuracy-low { background-color: rgba(220, 53, 69, 0.3); color: #dc3545; }
+
+        .error-item {
+            background: rgba(220, 53, 69, 0.1); border-radius: 12px;
+            padding: 16px; margin-bottom: 12px; border-left: 4px solid #dc3545;
+        }
+        .error-question { font-weight: 600; color: #dc3545; margin-bottom: 8px; }
+        .error-details { margin: 8px 0; color: rgba(255,255,255,0.8); }
+        .error-severity { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .severity-critical { background: rgba(220, 53, 69, 0.2); color: #dc3545; }
+        .severity-important { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .severity-minor { background: rgba(102, 126, 234, 0.2); color: #667eea; }
+
+        .requirement-item {
+            background: rgba(255,255,255,0.04); border-radius: 12px;
+            padding: 16px; margin-bottom: 12px; border-left: 4px solid #17a2b8;
+        }
+        .requirement-skill { font-weight: 600; color: #17a2b8; margin-bottom: 8px; }
+        .requirement-status { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .status-demonstrated { background: rgba(40, 167, 69, 0.2); color: #28a745; }
+        .status-partial { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .status-not-demonstrated { background: rgba(220, 53, 69, 0.2); color: #dc3545; }
+
+        .weak-area-item {
+            background: rgba(255,255,255,0.05); border-radius: 8px;
+            padding: 15px; margin-bottom: 10px; border-left: 4px solid;
+        }
+        .resources-section h3 { font-size: 18px; margin-bottom: 15px; }
+        .resource-topic { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .resource-topic-title { font-weight: 600; margin-bottom: 10px; color: #667eea; }
+        .resource-links { list-style: none; }
+        .resource-links li { padding: 8px 0; }
+        .resource-links a { color: #a5b4fc; text-decoration: none; transition: color 0.2s; }
+        .resource-links a:hover { color: #667eea; text-decoration: underline; }
+
+        .star-rating { display: flex; gap: 2px; align-items: center; }
+        .star-btn {
+            background: none !important; border: none !important; font-size: 18px !important;
+            cursor: pointer !important; padding: 2px 4px !important; margin: 0 !important;
+            transition: all 0.2s ease !important; opacity: 0.4; color: #999 !important;
+        }
+        .star-rating:hover .star-btn { opacity: 0.7; color: #fbbf24 !important; }
+        .star-rating:hover .star-btn:hover,
+        .star-rating:hover .star-btn:hover ~ .star-btn { opacity: 1; color: #fbbf24 !important; }
+        .star-btn.rated { opacity: 1; color: #fbbf24 !important; }
+
+        .hidden { display: none; }
+        .actions { display: flex; gap: 15px; justify-content: center; margin-top: 40px; }
+        .btn { padding: 15px 30px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; border: none; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.3); }
+        .btn-secondary { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+        .interview-meta { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+         .meta-badge { padding: 6px 14px; background: rgba(102,126,234,0.15); border-radius: 20px; font-size: 13px; color: rgba(255,255,255,0.8); }
+
+
+     </style>
+ </head>
+<body>
+<main data-content>
+<div class="container">
+    <div class="header">
+        <h1>Interview Results</h1>
+        <p>Detailed analysis of your technical interview</p>
+        <div class="interview-meta" id="interviewMeta"></div>
+    </div>
+
+    <div class="transcript-warning hidden" id="transcriptWarning">
+        <div class="transcript-warning-icon">⚠️</div>
+        <div class="transcript-warning-text">
+            <div class="transcript-warning-title">Interviewer questions were not captured</div>
+            Due to a technical issue, the AI interviewer's questions are missing from the transcript.
+            Analysis was done based on your answers. Accuracy may be lower.
+            <br><small style="color:rgba(255,255,255,0.5); margin-top:4px; display:block;">
+            If this problem persists — check your WebSocket connection and backend logs.
+        </small>
+        </div>
+    </div>
+
+    <div class="overall-score">
+        <div class="score-circle" id="scoreCircle" style="--score-deg: 0deg">
+            <span class="score-value" id="scoreValue">--</span>
+        </div>
+        <div class="score-label">Overall Score</div>
+        <div class="verdict" id="verdict">Loading...</div>
+    </div>
+
+    <div class="categories" id="categories"></div>
+
+    <div id="antiCheatReport" class="hidden" style="background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <h3 style="color: #dc3545; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            🛡️ Anti-Cheat Report
+        </h3>
+        <div id="antiCheatStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;"></div>
+        <div id="antiCheatViolations"></div>
+    </div>
+    <div class="feedback-section">
+        <h3>💪 Strengths</h3>
+        <ul class="feedback-list strengths" id="strengths"></ul>
+    </div>
+    <div class="feedback-section">
+        <h3>📈 Recommendations for Improvement</h3>
+        <ul class="feedback-list improvements" id="improvements"></ul>
+    </div>
+
+    <div class="feedback-section hidden" id="detailedAnswersSection">
+        <h3>📋 Detailed Answer Analysis</h3>
+        <div id="detailedAnswers"></div>
+    </div>
+
+    <div class="feedback-section hidden" id="errorsSection">
+        <h3>❌ Identified Errors and Inaccuracies</h3>
+        <div id="errors"></div>
+    </div>
+
+    <div class="feedback-section hidden" id="positionRequirementsSection">
+        <h3>👔 Position Requirements - Skills Analysis</h3>
+        <div id="positionRequirements"></div>
+    </div>
+
+    <div class="feedback-section hidden" id="weakAreasSection">
+        <h3>🎯 Questions for Further Practice</h3>
+        <p style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:15px;">
+            These questions scored below 70%. Work on them to improve.
+        </p>
+        <div id="weakAreas"></div>
+    </div>
+
+    <div class="feedback-section hidden" id="topicsSection">
+        <h3>📚 Topics to Study</h3>
+        <ul class="feedback-list topics" id="topicsNotCovered"></ul>
+    </div>
+
+    <div class="resources-section hidden" id="resourcesSection">
+        <h3>🔗 Useful Resources</h3>
+        <div id="resources"></div>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-secondary" onclick="downloadPDF()">📥 Download PDF</button>
+        <button class="btn btn-primary" onclick="sendReportViaEmail()" id="send-email-btn">📧 Send via Email</button>
+        <button class="btn btn-primary" onclick="if (window.navigateTo) window.navigateTo('/interview'); else location.href='/interview'">🔄 New Interview</button>
+    </div>
+</div>
+
+<script>
+
+    const settings   = JSON.parse(sessionStorage.getItem('interviewSettings') || '{}');
+    const transcript = JSON.parse(sessionStorage.getItem('interviewTranscript') || '[]');
+    let feedback     = null;
+
+
+    document.getElementById('interviewMeta').innerHTML = `
+        <span class="meta-badge">💻 ${settings.programmingLanguage || 'N/A'}</span>
+        <span class="meta-badge">👔 ${settings.position || 'N/A'}</span>
+        <span class="meta-badge">⏱️ ${settings.duration || 15} min</span>
+        <span class="meta-badge">📅 ${new Date().toLocaleDateString('en-US')}</span>`;
+
+
+    const userMsgs      = transcript.filter(m => m.role === 'user');
+    const assistantMsgs = transcript.filter(m => m.role === 'assistant');
+    const otherMsgs     = transcript.filter(m => m.role !== 'user' && m.role !== 'assistant');
+
+    console.log('═══════════════════════════════════════════');
+    console.log('📝 TRANSCRIPT STATE ON RESULTS PAGE');
+    console.log('Total messages:', transcript.length);
+    console.log('  user:', userMsgs.length);
+    console.log('  assistant:', assistantMsgs.length);
+    console.log('  other:', otherMsgs.length, otherMsgs.map(m => m.role));
+    console.log('All messages:', transcript.map(m => ({ role: m.role, content: m.content?.substring(0,50) })));
+    console.log('═══════════════════════════════════════════');
+
+    if (assistantMsgs.length === 0 && userMsgs.length > 0) {
+        document.getElementById('transcriptWarning').classList.remove('hidden');
+    }
+
+
+    /**
+     * If assistant messages are missing — build synthetic transcript
+     * from user responses only so GPT can evaluate them.
+     */
+    function buildEffectiveTranscript() {
+        if (assistantMsgs.length > 0) {
+
+            return transcript;
+        }
+
+        if (userMsgs.length === 0) {
+            return transcript;
+        }
+
+        console.warn('⚠️ Building synthetic transcript from user-only messages');
+
+        return userMsgs;
+    }
+
+    function resultsIsTimerMessage(content) {
+        const lc = (content || '').toLowerCase();
+        return lc.includes('⏰') || lc.includes('minute remaining') ||
+               lc.includes('seconds left') || lc.includes('minutes left');
+    }
+
+
+    function displayAntiCheatReport() {
+        const section = document.getElementById('antiCheatReport');
+        if (section) section.classList.add('hidden');
+
+        const reportJson = sessionStorage.getItem('antiCheatReport');
+        if (!reportJson) return;
+
+        try {
+            const report = JSON.parse(reportJson);
+            if (!report.enabled) return;
+
+            const section = document.getElementById('antiCheatReport');
+            const stats = document.getElementById('antiCheatStats');
+            const list = document.getElementById('antiCheatViolations');
+
+
+            stats.innerHTML = `
+            <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <div style="font-size: 28px; font-weight: bold; color: ${report.totalViolations > 0 ? '#dc3545' : '#28a745'};">${report.totalViolations}</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Total Violations</div>
+            </div>
+            <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <div style="font-size: 28px; font-weight: bold; color: #ffc107;">${report.fullscreenExits}</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Fullscreen Exits</div>
+            </div>
+                <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <div style="font-size: 28px; font-weight: bold; color: #ffc107;">${report.copyAttempts}</div>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Copy Attempts</div>
+                </div>
+                <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <div style="font-size: 28px; font-weight: bold; color: #ffc107;">${report.pasteAttempts}</div>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Paste Attempts</div>
+                </div>
+        `;
+
+
+            if (report.violations.length > 0) {
+                list.innerHTML = `
+                <h4 style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 15px 0 10px 0;">Violation Timeline:</h4>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    ${report.violations.map((v, i) => `
+                        <div style="padding: 8px 12px; margin-bottom: 6px; background: rgba(255,255,255,0.03); border-left: 3px solid #dc3545; border-radius: 4px; font-size: 13px;">
+                            <span style="color: #dc3545; font-weight: 600;">#${i + 1} ${v.type}</span>
+                            <span style="color: rgba(255,255,255,0.5); float: right; font-size: 11px;">${new Date(v.timestamp).toLocaleTimeString('en-US')}</span>
+                            <div style="color: rgba(255,255,255,0.7); margin-top: 4px;">${v.details}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            } else {
+                list.innerHTML = '<p style="color: #28a745; text-align: center; padding: 10px;">✅ No violations detected. Clean interview!</p>';
+            }
+
+            section.classList.remove('hidden');
+
+        } catch (e) {
+            console.error('Error displaying anti-cheat report:', e);
+        }
+    }
+
+
+    async function loadFeedback() {
+        document.getElementById('verdict').textContent = '⏳ Analyzing your answers...';
+
+        if (!transcript || transcript.length === 0) {
+            console.warn('⚠️ No transcript available');
+            displayNoDataError();
+            return;
+        }
+
+        const effectiveTranscript = buildEffectiveTranscript();
+        const hasAssistantMessages = assistantMsgs.length > 0;
+
+        const requestBody = {
+            transcript: effectiveTranscript,
+            programmingLanguage: settings.programmingLanguage || 'Unknown',
+            position:            settings.position            || 'Unknown',
+            interviewLanguage:   settings.interviewLanguage   || 'Ukrainian',
+            price:               settings.price               || 0,
+            jobDescription:      settings.jobDescription      || null,
+            jobRequirements:     settings.jobRequirements      || null,
+
+            hasInterviewerQuestions: hasAssistantMessages,
+            userOnlyMode: !hasAssistantMessages
+        };
+
+        console.log('📤 Request body:', {
+            ...requestBody,
+            transcript: `[${effectiveTranscript.length} messages]`
+        });
+
+        try {
+            const response = await window.authFetch('/api/feedback/generate', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(requestBody)
+            });
+
+            console.log('📥 Response:', response.status, response.statusText);
+
+            if (!response.ok) {
+                const err = await response.text();
+                console.error('❌ HTTP error:', err);
+                throw new Error(`HTTP ${response.status}: ${err}`);
+            }
+
+            const raw = await response.text();
+            console.log('📥 Raw (first 300):', raw.substring(0, 300));
+
+            feedback = JSON.parse(raw);
+            console.log('✅ Feedback:', feedback);
+
+            if (feedback.serviceUnavailable || feedback.error) {
+                displayServiceError();
+                return;
+            }
+
+            await displayFeedback();
+
+        } catch (error) {
+            console.error('❌ loadFeedback error:', error);
+            displayServiceError();
+        }
+    }
+
+
+    async function displayFeedback() {
+        const score    = feedback.overallScore || 75;
+        const scoreDeg = (score / 100) * 360;
+
+        setTimeout(() => {
+            document.getElementById('scoreCircle').style.setProperty('--score-deg', scoreDeg + 'deg');
+            document.getElementById('scoreValue').textContent  = Math.round(score) + '%';
+            document.getElementById('verdict').textContent     = feedback.verdict || 'Evaluation complete';
+        }, 300);
+
+        const categories = feedback.categories || [];
+        document.getElementById('categories').innerHTML = categories.map(cat => `
+        <div class="category">
+            <div class="category-header">
+                <span class="category-name">${cat.name}</span>
+                <span class="category-score">${Math.round(cat.score)}%</span>
+            </div>
+            <div class="category-bar">
+                <div class="category-bar-fill" style="width:${cat.score}%"></div>
+            </div>
+        </div>`).join('');
+
+        document.getElementById('strengths').innerHTML =
+            (feedback.strengths || []).map(s => `<li>${s}</li>`).join('');
+
+        const improvements = feedback.improvements || [];
+        const impSection   = document.getElementById('improvements').parentElement;
+        if (improvements.length > 0) {
+            document.getElementById('improvements').innerHTML = improvements.map(i => `<li>${i}</li>`).join('');
+            impSection.classList.remove('hidden');
+        } else {
+            impSection.classList.add('hidden');
+        }
+
+        const detailedAnswers = feedback.detailedAnswers || [];
+        if (detailedAnswers.length > 0) {
+            document.getElementById('detailedAnswers').innerHTML = detailedAnswers.map(ans => {
+                const acc          = ans.accuracy ?? 0;
+                const accClass     = acc >= 80 ? 'accuracy-high' : acc >= 50 ? 'accuracy-medium' : 'accuracy-low';
+                const isUnanswered = acc === 0 ||
+                    (ans.candidateAnswer || '').toLowerCase().includes("don't know") ||
+                    (ans.candidateAnswer || '').toLowerCase().includes("не знаю") ||
+                    (ans.candidateAnswer || '').toLowerCase().includes("я не знаю");
+                const borderColor  = isUnanswered ? '#dc3545' : '#667eea';
+
+                return `
+            <div class="answer-detail" style="border-left-color:${borderColor};${isUnanswered ? 'background:rgba(220,53,69,0.08);' : ''}">
+                <div class="answer-question">❓ Question  ${ans.questionNumber}: ${ans.question}</div>
+                <div class="answer-label">👤 Candidate's Answer:</div>
+                <div class="answer-content">${ans.candidateAnswer || '—'}</div>
+                <span class="answer-accuracy ${accClass}">${acc}% accuracy</span>
+                ${isUnanswered ? '<span style="display:inline-block;margin-left:10px;color:#dc3545;font-weight:bold;">⚠️ Not answered</span>' : ''}
+                <div class="answer-label">📝 Analysis:</div>
+                <div class="answer-content">${ans.feedback || ''}</div>
+                ${ans.correctAnswer ? `<div class="answer-label">✓ Correct Answer:</div><div class="answer-content">${ans.correctAnswer}</div>` : ''}
+            </div>`;
+            }).join('');
+            document.getElementById('detailedAnswersSection').classList.remove('hidden');
+        }
+
+        const errors = feedback.errors || [];
+        if (errors.length > 0) {
+            document.getElementById('errors').innerHTML = errors.map(err => `
+            <div class="error-item">
+                <div class="error-question">❌ ${err.question}</div>
+                <div class="error-details">
+                    <div class="answer-label">Error:</div>
+                    <div class="answer-content">${err.error}</div>
+                    <div class="answer-label">Correct Answer:</div>
+                    <div class="answer-content">${err.correctAnswer}</div>
+                    <div class="answer-label">Why it matters:</div>
+                    <div class="answer-content">${err.whyImportant}</div>
+                    <span class="error-severity severity-${err.severity}">${err.severity}</span>
+                </div>
+            </div>`).join('');
+            document.getElementById('errorsSection').classList.remove('hidden');
+        }
+
+        const posReqs = feedback.positionRequirements || [];
+        if (posReqs.length > 0) {
+            document.getElementById('positionRequirements').innerHTML = posReqs.map(req => {
+                const sc = `status-${(req.demonstrated || '').toLowerCase().replace(/\s+/g, '-')}`;
+                return `
+            <div class="requirement-item">
+                <div class="requirement-skill">👔 ${req.skill}</div>
+                <span class="requirement-status ${sc}">${req.demonstrated}</span>
+                <div class="answer-label">Evidence:</div>
+                <div class="answer-content">${req.evidence}</div>
+            </div>`;
+            }).join('');
+            document.getElementById('positionRequirementsSection').classList.remove('hidden');
+        }
+
+        const topics = feedback.topicsNotCovered || [];
+        if (topics.length > 0) {
+            document.getElementById('topicsNotCovered').innerHTML = topics.map(t => `<li>${t}</li>`).join('');
+            document.getElementById('topicsSection').classList.remove('hidden');
+        }
+
+        const weakAreas = (feedback.categories || []).filter(c => c.score < 70);
+        if (weakAreas.length > 0) {
+            let html = weakAreas.map(area => `
+            <div class="weak-area-item" style="border-left-color:${area.score >= 50 ? '#ffc107' : '#dc3545'}">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600;font-size:16px">${area.name}</span>
+                    <span style="background:${area.score >= 50 ? '#ffc107' : '#dc3545'};color:white;padding:4px 12px;border-radius:4px;font-weight:bold">${area.score}%</span>
+                </div>
+                <p style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.6)">Study this topic to improve</p>
+            </div>`).join('');
+
+            if (!settings.trackWeakQuestions) {
+                html += `
+            <div style="margin-top:15px;padding:15px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px">
+                <p style="color:#ffc107;margin:0 0 10px 0;font-size:14px">⚠️ <strong>Weak questions were not saved automatically</strong></p>
+                <p style="color:#999;margin:0 0 10px 0;font-size:12px">Enable "Track Weak Questions" in the next interview, or:</p>
+                <button onclick="saveWeakQuestionsManually()" style="background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600">
+                    💾 Save weak questions now
+                </button>
+            </div>`;
+            }
+
+            document.getElementById('weakAreas').innerHTML = html;
+            document.getElementById('weakAreasSection').classList.remove('hidden');
+        }
+
+        await loadAndRenderResources(feedback);
+
+        if (settings.trackWeakQuestions) {
+            console.log('📚 Processing weak questions (save new + delete correctly answered)');
+            saveWeakQuestions();
+        }
+    }
+
+
+    async function loadAndRenderResources(feedback) {
+        let allResources = [];
+
+
+        (feedback.resources || []).forEach(r => {
+            allResources.push({
+                topic:       r.topic,
+                title:       r.links?.[0]?.title || r.topic,
+                url:         r.links?.[0]?.url   || '#',
+                resourceId:  r.links?.[0]?.resourceId || null,
+                source:      'OpenAI',
+                needsSave:   !r.links?.[0]?.resourceId
+            });
+        });
+
+
+        try {
+            const topics = (feedback.categories || []).map(c => c.name);
+            if (topics.length > 0) {
+                const params = new URLSearchParams();
+                topics.forEach(t => params.append('topics', t));
+                params.append('limit', '3');
+
+                const res = await window.authFetch(`/api/resources/for-topics?${params}`);
+                if (res.ok) {
+                    const payload = await res.json();
+                    const db = Array.isArray(payload) ? payload : (payload?.resources || []);
+                    db.forEach(r => allResources.push({
+                        id: r.id, topic: r.topicName, title: r.title,
+                        url: r.url, source: 'Community', rating: r.rating, ratingCount: r.ratingCount
+                    }));
+                    console.log('✅ DB resources:', db.length);
+                }
+            }
+        } catch (e) { console.error('DB resources error:', e); }
+
+        renderResources(allResources);
+    }
+
+    function renderResources(allResources) {
+        const section = document.getElementById('resourcesSection');
+        if (!allResources.length) { section.classList.add('hidden'); return; }
+
+        const grouped = {};
+        allResources.forEach(r => {
+            if (!grouped[r.topic]) grouped[r.topic] = [];
+            grouped[r.topic].push(r);
+        });
+
+        let html = '';
+        Object.entries(grouped).forEach(([topic, items]) => {
+            html += `
+            <div class="resource-topic">
+                <div class="resource-topic-title">📖 ${topic}</div>
+                <ul class="resource-links">
+                    ${items.map(item => {
+                        const displayRating = item.rating != null ? Math.round(item.rating * 10) / 10 : (item.source === 'OpenAI' ? 5 : null);
+                        const ratingCount   = item.ratingCount || 0;
+                        return `
+                        <li>
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                                <div style="flex:1">
+                                    <a href="${item.url}" target="_blank" rel="noopener">🔗 ${item.title}</a>
+                                    <span style="font-size:11px;color:#999;margin-left:8px">${item.source}</span>
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+                                ${displayRating != null ? `<span style="font-size:12px;color:#fbbf24;font-weight:bold;min-width:60px">⭐ ${displayRating} ${ratingCount > 0 ? `(${ratingCount})` : ''}</span>` : ''}
+                                <div class="star-rating"
+                                    data-resource-id="${item.id || item.resourceId || ''}"
+                                    data-resource-title="${item.title}"
+                                    data-resource-url="${item.url}"
+                                    data-resource-topic="${item.topic}"
+                                    data-current-rating="${displayRating || 0}">
+                                    ${[1,2,3,4,5].map(star => `
+                                        <button class="star-btn ${star <= (displayRating || 0) ? 'rated' : ''}"
+                                            data-rating="${star}" title="${star} stars" type="button">★</button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </li>`;
+                    }).join('')}
+                </ul>
+            </div>`;
+        });
+
+        document.getElementById('resources').innerHTML = html;
+        section.classList.remove('hidden');
+        attachStarHandlers();
+    }
+
+    function attachStarHandlers() {
+        document.querySelectorAll('.star-btn').forEach(btn => {
+            btn.addEventListener('click', async e => {
+                const rating    = parseInt(e.target.dataset.rating);
+                const div       = e.target.closest('.star-rating');
+                let resourceId  = div.dataset.resourceId;
+
+                const body = { rating };
+                if (resourceId && resourceId !== 'null' && resourceId !== '') {
+                    body.resourceId = parseInt(resourceId);
+                } else {
+                    body.title = div.dataset.resourceTitle;
+                    body.url   = div.dataset.resourceUrl;
+                    body.topic = div.dataset.resourceTopic;
+                }
+
+                try {
+                    const res = await window.authFetch('/api/feedback/rate-resource', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    if (res.ok) {
+                        const result = await res.json();
+                        div.style.opacity = '0.5';
+                        setTimeout(() => { div.style.opacity = '1'; }, 200);
+                        const label = div.closest('li').querySelector('[style*="fbbf24"]');
+                        if (label) label.textContent = `⭐ ${Math.round(result.averageRating * 10)/10} (${result.ratingCount})`;
+                        const avg = Math.round(result.averageRating);
+                        div.querySelectorAll('.star-btn').forEach((b, i) =>
+                            b.classList.toggle('rated', i + 1 <= avg));
+                        if (result.resourceId && (!resourceId || resourceId === 'null'))
+                            div.dataset.resourceId = result.resourceId;
+                    } else {
+                        const err = await res.json();
+                        alert('Error: ' + (err.message || 'Unknown'));
+                    }
+                } catch (e) { alert('Error: ' + e.message); }
+            });
+
+            btn.addEventListener('mouseenter', e => {
+                const rating = parseInt(e.target.dataset.rating);
+                e.target.closest('.star-rating').querySelectorAll('.star-btn').forEach((b, i) => {
+                    b.style.opacity = i + 1 <= rating ? '1' : '0.4';
+                    b.style.color   = i + 1 <= rating ? '#fbbf24' : '#999';
+                });
+            });
+        });
+
+        document.querySelectorAll('.star-rating').forEach(div => {
+            div.addEventListener('mouseleave', () => {
+                div.querySelectorAll('.star-btn').forEach(b => {
+                    b.style.opacity = b.classList.contains('rated') ? '1' : '0.4';
+                    b.style.color   = b.classList.contains('rated') ? '#fbbf24' : '#999';
+                });
+            });
+        });
+    }
+
+
+    async function saveWeakQuestions(weakAreas) {
+        try {
+            const detailedAnswers = feedback.detailedAnswers || [];
+            const allAnswers = detailedAnswers.map(qa => ({
+                questionNumber: qa.questionNumber,
+                question: qa.question,
+                candidateAnswer: qa.candidateAnswer,
+                accuracy: qa.accuracy,
+                topic: qa.topic || 'Unknown'
+            }));
+
+            if (!allAnswers.length) {
+                console.log('ℹ️ No answers to save');
+                return;
+            }
+
+            const res = await window.authFetch('/api/feedback/weak-questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    feedback: { detailedAnswers: allAnswers },
+                    programmingLanguage: settings.programmingLanguage,
+                    language: settings.programmingLanguage,
+                    position: settings.position,
+                    trackWeakQuestions: true
+                })
+            });
+
+            const result = await res.json();
+            if (res.ok) console.log('✅ Saved weak questions:', result.saved);
+            else        console.warn('⚠️ Save failed:', result.message);
+        } catch (e) { console.error('❌ saveWeakQuestions:', e); }
+    }
+
+    async function saveWeakQuestionsManually() {
+        try {
+            const allAnswers = (feedback.detailedAnswers || [])
+                .map(qa => ({ questionNumber: qa.questionNumber, question: qa.question, candidateAnswer: qa.candidateAnswer, accuracy: qa.accuracy, topic: qa.topic || 'Unknown' }));
+
+            if (!allAnswers.length) { alert('⚠️ No data to save'); return; }
+
+            const res = await window.authFetch('/api/feedback/weak-questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    feedback: { detailedAnswers: allAnswers },
+                    programmingLanguage: settings.programmingLanguage,
+                    language: settings.programmingLanguage,
+                    position: settings.position,
+                    trackWeakQuestions: true
+                })
+            });
+
+            const result = await res.json();
+            if (res.ok) {
+                alert(`✅ Saved ${result.saved} weak questions!`);
+                const btn = document.querySelector('button[onclick="saveWeakQuestionsManually()"]');
+                if (btn) btn.closest('div').innerHTML = '<p style="color:#4caf50;margin:0">✅ Successfully saved!</p>';
+            } else {
+                alert('❌ Error: ' + result.message);
+            }
+        } catch (e) { alert('❌ Error: ' + e.message); }
+    }
+
+
+    function displayNoDataError() {
+        document.getElementById('scoreCircle').style.display = 'none';
+        document.querySelector('.score-label').textContent   = '';
+        document.getElementById('verdict').innerHTML = `
+            <div style="text-align:center;padding:20px">
+                <div style="font-size:64px;margin-bottom:20px">📋</div>
+                <div style="font-size:18px;color:rgba(255,255,255,0.8);margin-bottom:10px">No data to analyze</div>
+                <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:20px">Please complete an interview before viewing results</div>
+                <button onclick="if (window.navigateTo) window.navigateTo('/interview'); else location.href='/interview'" style="padding:10px 20px;background:#667eea;border:none;border-radius:8px;color:white;cursor:pointer;font-weight:600">← Settings</button>
+            </div>`;
+        ['improvements','strengths'].forEach(id => document.getElementById(id).parentElement.classList.add('hidden'));
+    }
+
+    function displayServiceError() {
+        document.getElementById('scoreCircle').style.display = 'none';
+        document.querySelector('.score-label').textContent   = '';
+        document.getElementById('verdict').innerHTML = `
+            <div style="text-align:center;padding:20px">
+                <div style="font-size:64px;margin-bottom:20px">😔</div>
+                <div style="font-size:18px;color:rgba(255,255,255,0.8);margin-bottom:10px">Service temporarily unavailable</div>
+                <div style="font-size:14px;color:rgba(255,255,255,0.5)">Please try again later</div>
+            </div>`;
+        ['improvements','strengths'].forEach(id => document.getElementById(id).parentElement.classList.add('hidden'));
+    }
+
+
+    async function downloadPDF() {
+        if (!feedback || feedback.serviceUnavailable || feedback.error) {
+            alert('Feedback unavailable');
+            return;
+        }
+        try {
+            const antiCheatReport = JSON.parse(sessionStorage.getItem('antiCheatReport') || 'null');
+
+            const res = await window.authFetch('/api/feedback/pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback, settings, antiCheatReport })
+            });
+            if (res.ok) {
+                const blob = await res.blob();
+                const url  = window.URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url;
+                a.download = `interview-report-${Date.now()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } else {
+                alert(`PDF generation error: ${res.status}`);
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        }
+    }
+
+
+    async function sendReportViaEmail() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (!currentUser.id) {
+            alert('You must be logged in to send the report via email');
+            if (window.navigateTo) window.navigateTo('/login');
+            else window.location.href = '/login';
+            return;
+        }
+
+        if (!feedback || feedback.serviceUnavailable || feedback.error) {
+            alert('Feedback unavailable');
+            return;
+        }
+
+        const btn = document.getElementById('send-email-btn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Sending...';
+
+        try {
+            const antiCheatReport = JSON.parse(sessionStorage.getItem('antiCheatReport') || 'null');
+
+            const res = await window.authFetch('/api/feedback/send-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback, settings, antiCheatReport })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                alert('✅ Report successfully sent to your email!');
+            } else {
+                alert(`❌ Error: ${data.message || 'Failed to send the report'}`);
+            }
+        } catch (e) {
+            alert('❌ Error: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📧 Send via Email';
+        }
+    }
+
+    let feedbackLoading = false;
+    let feedbackLoaded = false;
+
+    async function loadFeedbackOnce() {
+        if (feedbackLoading || feedbackLoaded) {
+            console.log('⏭️ loadFeedback skipped (already loading/loaded)');
+            return;
+        }
+        feedbackLoading = true;
+        try {
+            await loadFeedback();
+            feedbackLoaded = true;
+        } finally {
+            feedbackLoading = false;
+        }
+    }
+
+    document.addEventListener('spa:route', function(e) {
+        if (!e || !e.detail) return;
+        const path = e.detail.path;
+        if (path !== '/results' && path !== '/results.html') return;
+        if (feedbackLoading) return;
+        feedback = null;
+        feedbackLoaded = false;
+        feedbackLoading = false;
+
+        ['detailedAnswersSection', 'errorsSection', 'positionRequirementsSection',
+            'weakAreasSection', 'topicsSection', 'resourcesSection', 'antiCheatReport']
+            .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+
+        document.getElementById('categories').innerHTML = '';
+        document.getElementById('strengths').innerHTML  = '';
+        document.getElementById('improvements').innerHTML = '';
+        document.getElementById('detailedAnswers').innerHTML = '';
+        document.getElementById('weakAreas').innerHTML  = '';
+        document.getElementById('resources').innerHTML  = '';
+
+        document.getElementById('scoreValue').textContent = '--';
+        document.getElementById('verdict').textContent    = 'Loading...';
+        document.getElementById('scoreCircle')
+            .style.setProperty('--score-deg', '0deg');
+
+        displayAntiCheatReport();
+        loadFeedbackOnce();
+    });
+
+    displayAntiCheatReport();
+    loadFeedbackOnce();
+</script>
+</main>
+</body>
+</html>
+

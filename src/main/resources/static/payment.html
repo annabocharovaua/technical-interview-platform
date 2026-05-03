@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - AI Interviewer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>💳</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        div[data-route="/payment"] {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 70px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            width: 100%;
+        }
+
+        main[data-content] {
+            display: contents;
+        }
+
+        main[data-content] {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: calc(100vh - 70px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .icon { font-size: 48px; text-align: center; margin-bottom: 15px; }
+        h1 { text-align: center; color: #333; margin-bottom: 10px; font-size: 24px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+        .order-summary {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .order-row:last-child {
+            margin-bottom: 0;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            font-weight: bold;
+            color: #333;
+            font-size: 18px;
+        }
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        .card-row { display: flex; gap: 15px; }
+        .card-row .form-group { flex: 1; }
+        .pay-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        .pay-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(40, 167, 69, 0.4); }
+        .pay-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .back-btn {
+            width: 100%;
+            padding: 14px;
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .back-btn:hover { background: #e9ecef; }
+        .secure-badge { text-align: center; color: #28a745; font-size: 13px; margin-top: 15px; }
+        .test-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #856404;
+            text-align: center;
+        }
+        .loading { display: none; text-align: center; padding: 20px; }
+        .spinner {
+            display: inline-block;
+            width: 24px; height: 24px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #28a745;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .success-message { display: none; text-align: center; padding: 30px; }
+        .success-message .icon { font-size: 64px; margin-bottom: 20px; }
+        .success-message h2 { color: #28a745; margin-bottom: 10px; }
+         .success-message p { color: #666; margin-bottom: 20px; }
+     </style>
+ </head>
+<body>
+<main data-content>
+    <div class="container">
+        <div id="paymentForm">
+            <div class="icon">💳</div>
+            <h1>Pay for Interview</h1>
+            <p class="subtitle">Secure Payment</p>
+
+            <div class="test-notice">
+                ⚠️ This is test mode. Use card: <strong>4242 4242 4242 4242</strong>
+            </div>
+
+            <div class="order-summary">
+                <div class="order-row">
+                    <span>Interview</span>
+                    <span id="summaryDuration">60 minutes</span>
+                </div>
+                <div class="order-row">
+                    <span>Position</span>
+                    <span id="summaryPosition">Senior Developer</span>
+                </div>
+                <div class="order-row">
+                    <span>Total</span>
+                    <span id="summaryPrice">$9</span>
+                </div>
+            </div>
+
+            <form id="cardForm">
+                <div class="form-group">
+                    <label for="cardNumber">Card Number</label>
+                    <input type="text" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19" required>
+                </div>
+
+                <div class="card-row">
+                    <div class="form-group">
+                        <label for="expiry">Expiry Date</label>
+                        <input type="text" id="expiry" placeholder="MM/YY" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV</label>
+                        <input type="text" id="cvv" placeholder="123" maxlength="4" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cardName">Name on Card</label>
+                    <input type="text" id="cardName" placeholder="IVAN IVANOV" required>
+                </div>
+
+                <button type="submit" class="pay-btn" id="payBtn">💳 Pay $9</button>
+                <button type="button" class="back-btn" onclick="if (window.navigateTo) window.navigateTo('/interview'); else window.location.href='/interview'">← Back to Settings</button>
+            </form>
+
+            <div class="secure-badge">🔒 Secure SSL Connection</div>
+        </div>
+
+        <div id="loadingState" class="loading">
+            <span class="spinner"></span>
+            <span>Processing payment...</span>
+        </div>
+
+        <div id="successState" class="success-message">
+            <div class="icon">✅</div>
+            <h2>Payment Successful!</h2>
+            <p>Redirecting to interview...</p>
+        </div>
+    </div>
+
+    <script>
+        const settings = JSON.parse(sessionStorage.getItem('interviewSettings') || '{}');
+
+        if (!settings.duration) {
+            if (window.navigateTo) window.navigateTo('/interview');
+            else window.location.href = '/interview';
+        }
+
+        document.getElementById('summaryDuration').textContent = settings.duration + ' min';
+        document.getElementById('summaryPosition').textContent = settings.position || 'Developer';
+        document.getElementById('summaryPrice').textContent = '$' + settings.price;
+        document.getElementById('payBtn').textContent = '💳 Pay $' + settings.price;
+
+        document.getElementById('cardNumber').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.replace(/(\d{4})/g, '$1 ').trim();
+            e.target.value = value;
+        });
+
+        document.getElementById('expiry').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value;
+        });
+
+        document.getElementById('cvv').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        document.getElementById('cardForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const paymentForm = document.getElementById('paymentForm');
+            const loadingState = document.getElementById('loadingState');
+            const successState = document.getElementById('successState');
+            const payBtn = document.getElementById('payBtn');
+
+            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+
+            payBtn.disabled = true;
+            paymentForm.style.display = 'none';
+            loadingState.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/payment/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardNumber: cardNumber,
+                        amount: settings.price,
+                        duration: settings.duration
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    settings.paymentConfirmed = true;
+                    settings.paymentId = result.paymentId;
+                    sessionStorage.setItem('interviewSettings', JSON.stringify(settings));
+
+                    loadingState.style.display = 'none';
+                    successState.style.display = 'block';
+
+                    const interviewPage = settings.interfaceType === 'avatar' ? '/avatar' : '/interview';
+
+                    setTimeout(() => {
+                        if (window.navigateTo) window.navigateTo(interviewPage);
+                        else window.location.href = interviewPage;
+                    }, 2000);
+                } else {
+                    alert('Payment error: ' + result.error);
+                    paymentForm.style.display = 'block';
+                    loadingState.style.display = 'none';
+                    payBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                alert('Connection error. Please try again.');
+                paymentForm.style.display = 'block';
+                loadingState.style.display = 'none';
+                payBtn.disabled = false;
+            }
+        });
+    </script>
+</main>
+</body>
+</html>
+

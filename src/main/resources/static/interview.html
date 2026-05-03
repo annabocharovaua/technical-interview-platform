@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Technical Interview</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⚙️</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        main[data-content] {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: calc(100vh);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 { text-align: center; color: #333; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 16px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+        .required-mark {
+            color: #dc3545;
+            font-weight: 800;
+            margin-left: 6px;
+            font-size: 14px;
+        }
+        select, input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,9 12,15 18,9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+        .start-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .start-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+        .start-btn:active { transform: translateY(0); }
+        .start-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+        .info-box { background: #f0f4ff; border-radius: 10px; padding: 15px; margin-bottom: 25px; }
+        .info-box h3 { color: #667eea; font-size: 14px; margin-bottom: 8px; }
+        .info-box p { color: #666; font-size: 13px; line-height: 1.5; }
+        .icon { font-size: 48px; text-align: center; margin-bottom: 15px; }
+        .hint { color: #888; font-size: 12px; margin-top: 6px; }
+        .loading { text-align: center; padding: 15px; color: #667eea; font-weight: 500; }
+        .spinner {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid #e0e0e0; border-top-color: #667eea;
+            border-radius: 50%; animation: spin 1s linear infinite;
+            vertical-align: middle; margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .page-footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+        }
+        @keyframes overlaySlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes jobBarShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        @keyframes jobBarGrow {
+            0% { width: 0%; }
+            20% { width: 30%; }
+            50% { width: 55%; }
+            80% { width: 75%; }
+            95% { width: 88%; }
+            100% { width: 92%; }
+        }
+     </style>
+ </head>
+<body>
+<main data-content>
+    <div class="main-content">
+    <div class="container">
+        <div class="icon">🎯</div>
+        <h1>AI Technical Interview</h1>
+        <p class="subtitle">Practice interviews with an AI interviewer</p>
+
+        <div class="info-box">
+            <h3>💡 How it works</h3>
+            <p>Select the parameters below and start a voice interview. The AI will ask questions like a real interviewer, evaluate your answers and provide feedback.</p>
+        </div>
+
+        <form id="setupForm" onsubmit="return false;">
+            <div class="form-group">
+                <label for="programmingLanguage">🖥️ Programming Language <span class="required-mark" title="Required field">✓</span></label>
+                <select id="programmingLanguage" required>
+                    <option value="">Choose language...</option>
+                    <option value="Java">Java</option>
+                    <option value="Python">Python</option>
+                    <option value="JavaScript">JavaScript</option>
+                    <option value="TypeScript">TypeScript</option>
+                    <option value="C++">C++</option>
+                    <option value="C#">C#</option>
+                    <option value="Go">Go</option>
+                    <option value="Rust">Rust</option>
+                    <option value="Kotlin">Kotlin</option>
+                    <option value="Swift">Swift</option>
+                    <option value="PHP">PHP</option>
+                    <option value="Ruby">Ruby</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="position">👔 Position <span class="required-mark" title="Required field">✓</span></label>
+                <select id="position" required>
+                    <option value="">Choose position...</option>
+                    <option value="Junior Developer">Junior Developer</option>
+                    <option value="Middle Developer">Middle Developer</option>
+                    <option value="Senior Developer">Senior Developer</option>
+                    <option value="Lead Developer">Lead Developer / Tech Lead</option>
+                    <option value="Frontend Developer">Frontend Developer</option>
+                    <option value="Backend Developer">Backend Developer</option>
+                    <option value="Full Stack Developer">Full Stack Developer</option>
+                    <option value="DevOps Engineer">DevOps Engineer</option>
+                    <option value="Data Engineer">Data Engineer</option>
+                    <option value="ML Engineer">ML Engineer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="interviewLanguage">🌍 Interview Language <span class="required-mark" title="Required field">✓</span></label>
+                <select id="interviewLanguage" required>
+                    <option value="">Choose language...</option>
+                    <option value="Ukrainian" selected>Ukrainian</option>
+                    <option value="English">English</option>
+                    <option value="German">Deutsch</option>
+                    <option value="Polish">Polski</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="candidateName">👤 Your Name (optional)</label>
+                <input type="text" id="candidateName" placeholder="What is your name?">
+            </div>
+
+            <div class="form-group">
+                <label for="duration">⏱️ Interview Duration <span class="required-mark" title="Required field">✓</span></label>
+                <select id="duration" required>
+                    <option value="5" data-price="0" data-trial="true">5 minutes — Test 🧪</option>
+                    <option value="10" data-price="0" selected>10 minutes — Free ✨</option>
+                    <option value="15" data-price="0">15 minutes — Free ✨</option>
+                    <option value="30" data-price="5">30 minutes — $5</option>
+                    <option value="45" data-price="7">45 minutes — $7</option>
+                    <option value="60" data-price="9">60 minutes — $9</option>
+                    <option value="90" data-price="12">90 minutes — $12</option>
+                </select>
+                <p class="hint" id="durationHint">🎁 Free for testing</p>
+            </div>
+
+            <div class="form-group">
+                <label for="jobUrl">🔗 Job Posting Link (optional)</label>
+                <input type="url" id="jobUrl" placeholder="https://linkedin.com/jobs/...">
+                <p class="hint">We will analyze the requirements and adapt the questions to the job posting</p>
+            </div>
+
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="feedbackAfterAnswer" checked style="width: 20px; height: 20px; cursor: pointer;">
+                    <span>💬 Get comment after each answer</span>
+                </label>
+                <p class="hint">If enabled: AI will give comments/corrections. If disabled: AI will move to the next question</p>
+            </div>
+
+
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="trackWeakQuestions" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span>📚 Track Weak Questions</span>
+                </label>
+                <p class="hint">Questions you answered poorly (< 70%) will be saved for further practice</p>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="antiCheatEnabled" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span>🛡️ Anti-Cheat Mode</span>
+                </label>
+                <p class="hint">Forced fullscreen mode + blocking copy/paste. All violations will be recorded in the report.</p>
+            </div>
+
+            <button type="submit" class="start-btn" id="submitBtn">🚀 Start Interview</button>
+            <button type="button" class="start-btn" style="background: #28a745;" onclick="if (window.navigateTo) window.navigateTo('/live-coding'); else window.location.href='/live-coding'">💻 Live Coding</button>
+        </form>
+        <div id="jobLoadingOverlay" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 120px;
+">
+            <div style="
+        background: white;
+        border-radius: 20px;
+        padding: 40px 50px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-width: 480px;
+        width: 90%;
+        animation: overlaySlideIn 0.3s ease;
+    ">
+                <div style="font-size: 48px; margin-bottom: 20px;" id="jobLoadingIcon">🌐</div>
+                <h3 style="color: #333; margin-bottom: 12px; font-size: 20px;" id="jobLoadingTitle">
+                    Loading job posting...
+                </h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 24px; line-height: 1.6;" id="jobLoadingText">
+                    Analyzing the job posting page using AI.<br>
+                    This may take 10-30 seconds.
+                </p>
+                <div style="
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        ">
+                    <div id="jobLoadingBar" style="
+                height: 100%;
+                background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+                background-size: 200% 100%;
+                border-radius: 3px;
+                width: 0%;
+                animation: jobBarShimmer 1.5s ease-in-out infinite, jobBarGrow 25s ease-out forwards;
+            "></div>
+                </div>
+                <p style="color: #999; font-size: 12px;" id="jobLoadingStep">
+                    ⏳ Connecting to the website...
+                </p>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <footer class="page-footer">
+        <p>© 2026 Voice Assistant. All rights reserved.</p>
+    </footer>
+</main>
+
+    <script>
+        let interviewInitialized = false;
+
+        function initInterviewPage() {
+            const path = (window.location.pathname || '').replace(/\/$/, '') || '/';
+            if (path !== '/interview' && path !== '/interview.html') return;
+
+
+            const form = document.getElementById('setupForm');
+            if (!form) return;
+
+
+            if (interviewInitialized) return;
+            interviewInitialized = true;
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const durationSelect = document.getElementById('duration');
+            const durationHint = document.getElementById('durationHint');
+            let trialAvailable = true;
+
+            async function checkTrialAvailability() {
+                const userData = localStorage.getItem('currentUser');
+                if (!userData) return;
+
+                try {
+                    const user = JSON.parse(userData);
+                    if (user.trialUsed) {
+                        trialAvailable = false;
+                        const trialOption = durationSelect.querySelector('option[data-trial="true"]');
+                        if (trialOption) trialOption.remove();
+                        return;
+                    }
+
+                    const response = await window.authFetch(`/api/auth/trial/${user.id}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        trialAvailable = data.available;
+                        if (!data.available) {
+                            const trialOption = durationSelect.querySelector('option[data-trial="true"]');
+                            if (trialOption) trialOption.remove();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking trial:', error);
+                }
+            }
+
+            durationSelect.addEventListener('change', function() {
+                const selected = this.options[this.selectedIndex];
+                const price = parseInt(selected.dataset.price);
+                if (price === 0) {
+                    durationHint.textContent = '🎁 Free for testing';
+                    durationHint.style.color = '#28a745';
+                    submitBtn.textContent = '🚀 Start Interview';
+                } else {
+                    durationHint.textContent = `💳 Payment required $${price}`;
+                    durationHint.style.color = '#667eea';
+                    submitBtn.textContent = `💳 Pay $${price} and Start`;
+                }
+            });
+
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('✅ Form submit intercepted');
+
+                const jobUrl = document.getElementById('jobUrl').value.trim();
+                const durationOption = durationSelect.options[durationSelect.selectedIndex];
+                const duration = parseInt(durationSelect.value);
+                const price = parseInt(durationOption.dataset.price);
+                const isTrial = durationOption.dataset.trial === 'true';
+
+                const settings = {
+                    programmingLanguage: document.getElementById('programmingLanguage').value,
+                    position: document.getElementById('position').value,
+                    interviewLanguage: document.getElementById('interviewLanguage').value,
+                    candidateName: document.getElementById('candidateName').value || 'Candidate',
+                    duration: duration,
+                    price: price,
+                    isTrial: isTrial,
+                    feedbackAfterAnswer: document.getElementById('feedbackAfterAnswer').checked,
+                    trackWeakQuestions: document.getElementById('trackWeakQuestions').checked,
+                    antiCheatEnabled: document.getElementById('antiCheatEnabled').checked,
+                    interfaceType: 'avatar',
+                    jobUrl: jobUrl || null,
+                    jobDescription: null,
+                    jobRequirements: null
+                };
+
+
+                if (!settings.programmingLanguage || !settings.position || !settings.interviewLanguage) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                if (isTrial) {
+                    const userData = localStorage.getItem('currentUser');
+                    if (!userData) {
+                        if (confirm('You need to sign in for a trial interview. Go to login page?')) {
+                            if (window.navigateTo) window.navigateTo('/login');
+                            else window.location.href = '/login';
+                        }
+                        return;
+                    }
+
+                    const user = JSON.parse(userData);
+                    try {
+                        const response = await window.authFetch(`/api/auth/trial/${user.id}/use`, { method: 'POST' });
+                        if (!response.ok) {
+                            alert('Trial interview already used');
+                            checkTrialAvailability();
+                            return;
+                        }
+                        user.trialUsed = true;
+                        localStorage.setItem('currentUser', JSON.stringify(user));
+                    } catch (error) {
+                        console.error('Error using trial:', error);
+                    }
+                }
+
+                if (jobUrl) {
+                    const overlay = document.getElementById('jobLoadingOverlay');
+                    const loadingStep = document.getElementById('jobLoadingStep');
+                    const loadingTitle = document.getElementById('jobLoadingTitle');
+                    const loadingIcon = document.getElementById('jobLoadingIcon');
+                    const loadingBar = document.getElementById('jobLoadingBar');
+
+                    try {
+                        submitBtn.disabled = true;
+                        overlay.style.display = 'flex';
+
+
+                        loadingStep.textContent = '⏳ Connecting to the website...';
+
+
+                        const stepTimer1 = setTimeout(() => {
+                            loadingStep.textContent = '🔍 Loading job posting page...';
+                        }, 2000);
+
+
+                        const stepTimer2 = setTimeout(() => {
+                            loadingStep.textContent = '🤖 AI analyzing job requirements...';
+                        }, 6000);
+
+
+                        const stepTimer3 = setTimeout(() => {
+                            loadingStep.textContent = '📋 Preparing list of questions...';
+                        }, 12000);
+
+
+                        const stepTimer4 = setTimeout(() => {
+                            loadingStep.textContent = '⏳ Almost ready, please wait...';
+                        }, 20000);
+
+                        const response = await fetch('/api/job/parse', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url: jobUrl })
+                        });
+
+
+                        clearTimeout(stepTimer1);
+                        clearTimeout(stepTimer2);
+                        clearTimeout(stepTimer3);
+                        clearTimeout(stepTimer4);
+
+                        const data = await response.json();
+
+                        if (data.success) {
+
+                            loadingIcon.textContent = '✅';
+                            loadingTitle.textContent = 'Job posting loaded!';
+                            loadingStep.textContent = `${data.title || 'Job Posting'} — ${data.company || ''}`;
+                            loadingBar.style.animation = 'none';
+                            loadingBar.style.width = '100%';
+                            loadingBar.style.background = 'linear-gradient(90deg, #28a745, #20c997)';
+
+                            settings.jobDescription = data.description;
+                            settings.jobRequirements = data.requirements;
+                            settings.jobTitle = data.title;
+                            settings.jobCompany = data.company;
+                            settings.jobSeniority = data.seniority;
+                            settings.jobTechnologies = data.technologies;
+                            settings.jobFocusAreas = data.focusAreas;
+
+                            console.log('✅ Job parsed:', data);
+
+
+                            await new Promise(r => setTimeout(r, 1500));
+                            overlay.style.display = 'none';
+
+                        } else {
+
+                            loadingIcon.textContent = '❌';
+                            loadingTitle.textContent = 'Failed to load';
+                            loadingStep.innerHTML = `${data.error || 'Unknown error'}<br><br>
+                <span style="color: #667eea; cursor: pointer; text-decoration: underline;"
+                      onclick="document.getElementById('jobLoadingOverlay').style.display='none'">
+                    Close and try another link
+                </span>`;
+                            loadingBar.style.animation = 'none';
+                            loadingBar.style.width = '100%';
+                            loadingBar.style.background = '#dc3545';
+
+                            submitBtn.disabled = false;
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing job:', error);
+
+
+                        loadingIcon.textContent = '❌';
+                        loadingTitle.textContent = 'Connection error';
+                        loadingStep.innerHTML = `${error.message}<br><br>
+            <span style="color: #667eea; cursor: pointer; text-decoration: underline;"
+                  onclick="document.getElementById('jobLoadingOverlay').style.display='none'">
+                Close
+            </span>`;
+                        loadingBar.style.animation = 'none';
+                        loadingBar.style.width = '100%';
+                        loadingBar.style.background = '#dc3545';
+
+                        submitBtn.disabled = false;
+                        return;
+                    } finally {
+                        submitBtn.disabled = false;
+
+                        setTimeout(() => {
+                            loadingIcon.textContent = '🌐';
+                            loadingTitle.textContent = 'Loading job posting...';
+                            document.getElementById('jobLoadingText').innerHTML =
+                                'Analyzing the job posting page using AI.<br>This may take 10-30 seconds.';
+                            loadingStep.textContent = '⏳ Connecting to the website...';
+                            loadingBar.style.animation = '';
+                            loadingBar.style.width = '';
+                            loadingBar.style.background = '';
+                        }, 500);
+                    }
+                }
+
+                sessionStorage.setItem('interviewSettings', JSON.stringify(settings));
+                const interviewPage = '/avatar';
+
+                if (price > 0) {
+                    if (window.navigateTo) window.navigateTo('/payment');
+                    else window.location.href = '/payment';
+                } else {
+                    if (window.navigateTo) window.navigateTo(interviewPage);
+                    else window.location.href = interviewPage;
+                }
+            });
+
+
+            checkTrialAvailability();
+
+            const saved = sessionStorage.getItem('interviewSettings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    document.getElementById('programmingLanguage').value = settings.programmingLanguage || '';
+                    document.getElementById('position').value = settings.position || '';
+                    document.getElementById('interviewLanguage').value = settings.interviewLanguage || '';
+                    document.getElementById('candidateName').value = settings.candidateName || '';
+                    document.getElementById('jobUrl').value = settings.jobUrl || '';
+                    document.getElementById('feedbackAfterAnswer').checked = settings.feedbackAfterAnswer !== false;
+                    document.getElementById('trackWeakQuestions').checked = settings.trackWeakQuestions === true;
+                    document.getElementById('antiCheatEnabled').checked = settings.antiCheatEnabled === true;
+                    if (settings.duration) {
+                        const hasUser = !!localStorage.getItem('currentUser');
+                        const restoredDuration = (!hasUser && Number(settings.duration) === 5) ? 10 : settings.duration;
+                        document.getElementById('duration').value = restoredDuration;
+                        durationSelect.dispatchEvent(new Event('change'));
+                    }
+                } catch (e) {
+                    console.error('Error loading saved settings:', e);
+                }
+            }
+
+            console.log('✅ Interview page initialized');
+        }
+
+        initInterviewPage();
+
+
+        document.addEventListener('spa:route', function(e) {
+            if (e && e.detail && (e.detail.path === '/interview' || e.detail.path === '/interview.html')) {
+
+
+                const form = document.getElementById('setupForm');
+                if (form && !form.dataset.initialized) {
+                    form.dataset.initialized = '1';
+                    initInterviewPage();
+                }
+            }
+        });
+
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initInterviewPage);
+        }
+    </script>
+</body>
+</html>
+

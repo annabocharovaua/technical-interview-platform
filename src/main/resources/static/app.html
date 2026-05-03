@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🎙️</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html.home-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+        }
+
+        body.home-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Global Header Styles */
+        #globalHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            min-height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        #globalHeader.home-page,
+        #globalHeader.auth-page,
+        #globalHeader.interview-page,
+        #globalHeader.live-coding-page,
+        #globalHeader.avatar-page,
+        #globalHeader.payment-page,
+        #globalHeader.profile-page,
+        #globalHeader.results-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .global-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .global-logo span:first-child {
+            font-size: 32px;
+        }
+
+        .global-nav {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .global-nav-btn {
+            padding: 10px 20px;
+            border: 2px solid white;
+            border-radius: 25px;
+            background: transparent;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .global-nav-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .global-nav-btn.primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .global-nav-btn.primary:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .global-user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .global-user-name {
+            color: white;
+            font-weight: 500;
+        }
+
+        .global-user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .global-dropdown {
+            position: relative;
+        }
+
+        .global-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            min-width: 200px;
+            padding: 10px 0;
+            margin-top: 10px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .global-dropdown-item {
+            display: block;
+            padding: 12px 20px;
+            color: #333;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .global-dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .global-dropdown-item.danger {
+            color: #dc3545;
+        }
+
+        .global-dropdown-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 10px 0;
+        }
+
+        #app {
+            min-height: calc(100vh - 70px);
+            width: 100%;
+        }
+
+        /* Route-level backgrounds (reliable even when route styles are cleaned up) */
+        #app.home-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Hide old navigation headers loaded from individual pages (replaced by global header). */
+        #app > div > header,
+        #app > div > .user-header,
+        #app > div > nav {
+            display: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            #globalHeader {
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="globalHeader">
+        <a href="javascript:void(0)" class="global-logo" onclick="if(window.navigateTo) window.navigateTo('/home'); else window.location.href='/home'">
+            <span>🎙️</span>
+            <span>Voice Assistant</span>
+        </a>
+
+
+        <div id="globalGuestNav" class="global-nav">
+            <a href="javascript:void(0)" class="global-nav-btn" onclick="if(window.navigateTo) window.navigateTo('/login'); else window.location.href='/login'">Login</a>
+            <a href="javascript:void(0)" class="global-nav-btn primary" onclick="goToRegister()">Register</a>
+        </div>
+
+
+        <div id="globalUserNav" class="global-nav" style="display: none;">
+            <div class="global-dropdown">
+                <div class="global-user-menu" style="cursor: pointer;">
+                    <span class="global-user-name" id="globalUserName">User</span>
+                    <div class="global-user-avatar" id="globalUserAvatar">U</div>
+                </div>
+                <div class="global-dropdown-menu">
+                    <a href="javascript:void(0)" class="global-dropdown-item" onclick="if(window.navigateTo) window.navigateTo('/home'); else window.location.href='/home'">🏠 Home</a>
+                    <a href="javascript:void(0)" class="global-dropdown-item" onclick="if(window.navigateTo) window.navigateTo('/profile'); else window.location.href='/profile'">👤 Profile</a>
+                    <a href="javascript:void(0)" class="global-dropdown-item" onclick="if(window.navigateTo) window.navigateTo('/interview'); else window.location.href='/interview'">⚙️ Interview Settings</a>
+                    <div class="global-dropdown-divider"></div>
+                    <a href="javascript:void(0)" class="global-dropdown-item danger" onclick="globalLogout()">🚪 Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="app"></div>
+
+    <script src="websocket-manager.js"></script>
+    <script src="audio-manager.js"></script>
+    <script src="anti-cheat.js"></script>
+    <script src="spa-router.js"></script>
+    <script>
+        window.authFetch = function(url, options = {}) {
+            const token = localStorage.getItem('authToken');
+            const headers = {
+                ...options.headers,
+                ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+            };
+            return fetch(url, { ...options, headers, credentials: 'include' })
+                .then(response => {
+                    if (response.status === 403 || response.status === 401) {
+                        const isAuthEndpoint = url.includes('/api/auth/login') || url.includes('/api/auth/register');
+                        if (!isAuthEndpoint && token) {
+                            console.warn('🔒 Token expired or invalid. Redirecting to login...');
+                            localStorage.removeItem('authToken');
+                            localStorage.removeItem('currentUser');
+                            if (window.updateGlobalHeader) window.updateGlobalHeader();
+
+                            if (!window._tokenExpiredShown) {
+                                window._tokenExpiredShown = true;
+                                alert('Session expired. Please log in again.');
+                                if (window.navigateTo) window.navigateTo('/login');
+                                else window.location.href = '/login';
+                            }
+                        }
+                    }
+                    return response;
+                });
+        };
+
+
+        function updateGlobalHeader() {
+            const userJson = localStorage.getItem('currentUser');
+            const guestNav = document.getElementById('globalGuestNav');
+            const userNav = document.getElementById('globalUserNav');
+            const userName = document.getElementById('globalUserName');
+            const userAvatar = document.getElementById('globalUserAvatar');
+
+            if (userJson) {
+                try {
+                    const user = JSON.parse(userJson);
+                    guestNav.style.display = 'none';
+                    userNav.style.display = 'flex';
+                    userName.textContent = user.name || 'User';
+                    userAvatar.textContent = (user.name || 'U').charAt(0).toUpperCase();
+                } catch (e) {
+                    localStorage.removeItem('currentUser');
+                    showGuestNav();
+                }
+            } else {
+                showGuestNav();
+            }
+        }
+
+        function showGuestNav() {
+            document.getElementById('globalGuestNav').style.display = 'flex';
+            document.getElementById('globalUserNav').style.display = 'none';
+        }
+
+        function globalLogout() {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            updateGlobalHeader();
+            if (window.navigateTo) window.navigateTo('/home');
+            else window.location.href = '/home';
+        }
+
+        function goToRegister() {
+            if (window.navigateTo) {
+                window.navigateTo('/login');
+
+                setTimeout(() => {
+                    const registerBtn = document.querySelector('.tab-btn[onclick*="register"]');
+                    if (registerBtn) registerBtn.click();
+                }, 300);
+            } else {
+                window.location.href = '/login';
+            }
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateGlobalHeader();
+        });
+
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'currentUser') {
+                updateGlobalHeader();
+            }
+        });
+
+        function updateRouteBackgroundForPath(path) {
+            const normalizedPath = ((path || '').split('?')[0].split('#')[0].replace(/\/$/, '') || '/');
+            const isHomeForBg = (normalizedPath === '/' || normalizedPath === '/home');
+
+            const app = document.getElementById('app');
+            if (app) {
+                app.classList.toggle('home-bg', isHomeForBg);
+            }
+
+            document.body.classList.toggle('home-bg', isHomeForBg);
+            document.documentElement.classList.toggle('home-bg', isHomeForBg);
+        }
+
+
+        function updateHeaderStyleForRoute(path = window.location.pathname) {
+            const header = document.getElementById('globalHeader');
+            if (!header) return;
+
+            const normalizedPath = ((path || '').split('?')[0].split('#')[0].replace(/\/$/, '') || '/');
+            header.classList.toggle('home-page',        normalizedPath === '/' || normalizedPath === '/home');
+            header.classList.toggle('auth-page',        normalizedPath === '/login' || normalizedPath === '/login.html');
+            header.classList.toggle('interview-page',   normalizedPath === '/interview' || normalizedPath === '/interview.html');
+            header.classList.toggle('live-coding-page', normalizedPath === '/live-coding' || normalizedPath === '/live-coding.html');
+            header.classList.toggle('avatar-page',      normalizedPath === '/avatar' || normalizedPath === '/avatar.html');
+            header.classList.toggle('payment-page',     normalizedPath === '/payment' || normalizedPath === '/payment.html');
+            header.classList.toggle('profile-page',     normalizedPath === '/profile' || normalizedPath === '/profile.html');
+            header.classList.toggle('results-page',     normalizedPath === '/results' || normalizedPath === '/results.html');
+        }
+
+        window.addEventListener('popstate', updateHeaderStyleForRoute);
+
+
+        document.addEventListener('spa:route', (e) => {
+            const routePath = (e.detail && e.detail.path) ? e.detail.path : window.location.pathname;
+            updateHeaderStyleForRoute(routePath);
+            updateRouteBackgroundForPath(routePath);
+        });
+
+        (function() {
+            const origPushState = history.pushState;
+            const origReplaceState = history.replaceState;
+
+            history.pushState = function() {
+                const ret = origPushState.apply(this, arguments);
+                updateHeaderStyleForRoute();
+                return ret;
+            };
+
+            history.replaceState = function() {
+                const ret = origReplaceState.apply(this, arguments);
+                updateHeaderStyleForRoute();
+                return ret;
+            };
+        })();
+
+
+        updateHeaderStyleForRoute();
+        updateRouteBackgroundForPath(window.location.pathname);
+
+        (function () {
+            const dropdown = document.querySelector('.global-dropdown');
+            const menu     = document.querySelector('.global-dropdown-menu');
+            if (!dropdown || !menu) return;
+
+            let closeTimer = null;
+
+            function open() {
+                clearTimeout(closeTimer);
+                menu.style.display = 'block';
+            }
+
+            function scheduledClose() {
+                closeTimer = setTimeout(function () {
+                    menu.style.display = 'none';
+                }, 150);
+            }
+
+            dropdown.addEventListener('mouseenter', open);
+            dropdown.addEventListener('mouseleave', scheduledClose);
+        })();
+    </script>
+</body>
+</html>
+

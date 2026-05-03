@@ -1,0 +1,75 @@
+CREATE DATABASE IF NOT EXISTS voice_assistant;
+USE voice_assistant;
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(50),
+    password VARCHAR(255) NOT NULL,
+    company VARCHAR(255),
+    position VARCHAR(255),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_login DATETIME,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    trial_used BOOLEAN NOT NULL DEFAULT FALSE,
+    INDEX idx_email (email),
+    INDEX idx_active (active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS coding_topics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    topic_name VARCHAR(255) NOT NULL,
+    average_score DOUBLE NOT NULL DEFAULT 0.0,
+    tasks_completed INT NOT NULL DEFAULT 0,
+    tasks_failed INT NOT NULL DEFAULT 0,
+    category_type VARCHAR(100),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_topic (user_id, topic_name),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_category (category_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS coding_progress (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    task_id VARCHAR(255) NOT NULL,
+    task_title VARCHAR(500) NOT NULL,
+    task_description LONGTEXT,
+    language VARCHAR(50) NOT NULL,
+    difficulty VARCHAR(50) NOT NULL,
+    score INT NOT NULL,
+    user_code LONGTEXT,
+    feedback LONGTEXT,
+    topics_identified JSON,
+    task_category VARCHAR(100),
+    hints_used INT NOT NULL DEFAULT 0,
+    time_spent_seconds INT,
+    completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_difficulty (difficulty),
+    INDEX idx_category (task_category),
+    INDEX idx_completed_at (completed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS user_skill_profiles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    overall_score DOUBLE NOT NULL DEFAULT 0.0,
+    total_tasks_completed INT NOT NULL DEFAULT 0,
+    total_tasks_attempted INT NOT NULL DEFAULT 0,
+    preferred_language VARCHAR(50),
+    preferred_difficulty VARCHAR(50),
+    weakest_topic VARCHAR(255),
+    strongest_topic VARCHAR(255),
+    current_level VARCHAR(50) DEFAULT 'BEGINNER',
+    recommended_topic VARCHAR(255),
+    last_assessed DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_level (current_level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
