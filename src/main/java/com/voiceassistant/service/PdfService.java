@@ -488,11 +488,11 @@ public class PdfService {
                     .setFontColor(TEXT_MUTED)
                     .setCharacterSpacing(1)
                     .setMarginBottom(4));
-            String displayAnswer = candidateAnswer.isBlank() ? "(no answer provided)" : candidateAnswer;
+            String displayAnswer = (candidateAnswer == null || candidateAnswer.isBlank()) ? "(no answer provided)" : candidateAnswer;
             qCell.add(new Paragraph(displayAnswer)
-                    .setFont(candidateAnswer.isBlank() ? italicFont : font)
+                    .setFont((candidateAnswer == null || candidateAnswer.isBlank()) ? italicFont : font)
                     .setFontSize(10)
-                    .setFontColor(candidateAnswer.isBlank() ? TEXT_MUTED : TEXT_SECONDARY)
+                    .setFontColor((candidateAnswer == null || candidateAnswer.isBlank()) ? TEXT_MUTED : TEXT_SECONDARY)
                     .setMarginBottom(12)
                     .setMultipliedLeading(1.4f)
                     .setBackgroundColor(BG_LIGHT)
